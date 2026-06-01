@@ -20,8 +20,13 @@ async function bootstrap() {
   app.use(json({ limit: '40mb' }));
   app.use(urlencoded({ extended: true, limit: '40mb' }));
 
+  const configuredFrontendUrls = (configService.get<string>('FRONTEND_URL') || '')
+    .split(',')
+    .map((url) => url.trim())
+    .filter(Boolean);
+
   app.enableCors({
-    origin: ['http://localhost:8080', 'http://localhost:8081', configService.get<string>('FRONTEND_URL')].filter(Boolean) as string[],
+    origin: ['http://localhost:8080', 'http://localhost:8081', 'https://luxury-lodging-hub.vercel.app', ...configuredFrontendUrls],
     credentials: true,
   });
 
