@@ -1,0 +1,490 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Amenity {
+  id             BigInt             @id @default(autoincrement())
+  name           String             @unique @db.VarChar(100)
+  scope          amenity_scope_enum @default(general)
+  icon           String?            @db.VarChar(100)
+  isActive       Boolean            @default(true) @map("is_active")
+  createdAt      DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  hotelAmenities HotelAmenity[]
+  roomAmenities  RoomAmenity[]
+
+  @@map("amenities")
+}
+
+model AppUser {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  fullName        String         @map("full_name") @db.VarChar(150)
+  email           String         @unique @db.Citext
+  phone           String?        @db.VarChar(20)
+  avatar          String?
+  passwordHash    String?        @map("password_hash")
+  role            user_role_enum @default(customer)
+  isActive        Boolean        @default(true) @map("is_active")
+  lastLoginAt     DateTime?      @map("last_login_at") @db.Timestamptz(6)
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime       @default(now()) @map("updated_at") @db.Timestamptz(6)
+  googleId        String?        @unique @map("google_id") @db.VarChar(255)
+  authProvider    String         @default("local") @map("auth_provider") @db.VarChar(20)
+  isEmailVerified Boolean        @default(false) @map("is_email_verified")
+  isPhoneVerified Boolean        @default(false) @map("is_phone_verified")
+  bookings        Booking[]
+  hotelsCreated   Hotel[]        @relation("hotels_created_byToapp_users")
+  hotelsDeleted   Hotel[]        @relation("hotels_deleted_byToapp_users")
+  hotelsUpdated   Hotel[]        @relation("hotels_updated_byToapp_users")
+  notifications   Notification[]
+  reviews         Review[]
+
+  @@index([role], map: "idx_users_role")
+  @@map("app_users")
+}
+
+model Notification {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recipientUserId String?  @map("recipient_user_id") @db.Uuid
+  scope           String   @db.VarChar(20)
+  kind            String   @db.VarChar(50)
+  title           String   @db.VarChar(255)
+  message         String
+  href            String?  @db.VarChar(255)
+  statusLabel     String?  @map("status_label") @db.VarChar(100)
+  entityType      String?  @map("entity_type") @db.VarChar(50)
+  entityId        String?  @map("entity_id") @db.VarChar(100)
+  eventKey        String   @unique @map("event_key") @db.VarChar(191)
+  metadata        Json?
+  isRead          Boolean  @default(false) @map("is_read")
+  readAt          DateTime? @map("read_at") @db.Timestamptz(6)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  recipient       AppUser? @relation(fields: [recipientUserId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([recipientUserId, createdAt], map: "idx_notifications_recipient")
+  @@index([scope, createdAt], map: "idx_notifications_scope")
+  @@map("notifications")
+}
+
+model Otp {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email       String?  @db.Citext
+  phone       String?  @db.VarChar(20)
+  otpCode     String   @map("otp_code") @db.VarChar(10)
+  purpose     String   @default("register") @db.VarChar(30)
+  expiresAt   DateTime @map("expires_at") @db.Timestamptz(6)
+  verified    Boolean  @default(false)
+  attempts    Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([email, otpCode])
+  @@index([phone, otpCode])
+  @@map("otps")
+}
+
+
+
+model BookingItem {
+  id                BigInt  @id @default(autoincrement())
+  bookingId         String  @map("booking_id") @db.VarChar(40)
+  roomId            String  @map("room_id") @db.VarChar(80)
+  roomNameSnapshot  String  @map("room_name_snapshot") @db.VarChar(150)
+  roomPriceSnapshot Decimal @map("room_price_snapshot") @db.Decimal(14, 2)
+  roomsCount        Int     @map("rooms_count") @db.SmallInt
+  guestsPerRoom     Int     @map("guests_per_room") @db.SmallInt
+  nights            Int
+  lineSubtotal      Decimal @map("line_subtotal") @db.Decimal(14, 2)
+  booking           Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  room              Room    @relation(fields: [roomId], references: [id], onUpdate: NoAction)
+
+  @@map("booking_items")
+}
+
+model Booking {
+  id                String              @id @db.VarChar(40)
+  bookingCode       String              @unique @map("booking_code") @db.VarChar(40)
+  userId            String?             @map("user_id") @db.Uuid
+  hotelId           String              @map("hotel_id") @db.VarChar(50)
+  promotionId       String?             @map("promotion_id") @db.VarChar(30)
+  hotelNameSnapshot String              @map("hotel_name_snapshot") @db.VarChar(255)
+  checkIn           DateTime            @map("check_in") @db.Date
+  checkOut          DateTime            @map("check_out") @db.Date
+  nights            Int
+  guestName         String              @map("guest_name") @db.VarChar(150)
+  guestEmail        String              @map("guest_email") @db.Citext
+  guestPhone        String              @map("guest_phone") @db.VarChar(20)
+  guests            Int                 @map("total_guests") @db.SmallInt
+  roomsCount        Int                 @map("total_rooms") @db.SmallInt
+  subtotal          Decimal             @db.Decimal(14, 2)
+  tax               Decimal             @default(0) @db.Decimal(14, 2)
+  discount          Decimal             @default(0) @map("discount_amount") @db.Decimal(14, 2)
+  total             Decimal             @map("total_amount") @db.Decimal(14, 2)
+  paymentMethod     payment_method_enum @map("payment_method")
+  paymentStatus     payment_status_enum @default(pending) @map("payment_status")
+  transactionId     String?             @map("transaction_id") @db.VarChar(100)
+  status            booking_status_enum @default(pending)
+  specialRequest    String?             @map("special_request")
+  adminNote         String?             @map("admin_note")
+  createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  confirmedAt       DateTime?           @map("confirmed_at") @db.Timestamptz(6)
+  cancelledAt       DateTime?           @map("cancelled_at") @db.Timestamptz(6)
+  items             BookingItem[]
+  hotel             Hotel               @relation(fields: [hotelId], references: [id], onUpdate: NoAction)
+  promotion         Promotion?          @relation(fields: [promotionId], references: [id], onUpdate: NoAction)
+  user              AppUser?            @relation(fields: [userId], references: [id], onUpdate: NoAction)
+  payment           Payment?
+
+  @@index([checkIn, checkOut], map: "idx_bookings_dates")
+  @@index([hotelId], map: "idx_bookings_hotel")
+  @@index([status], map: "idx_bookings_status")
+  @@index([userId], map: "idx_bookings_user")
+  @@map("bookings")
+}
+
+model HotelAmenity {
+  hotelId   String  @map("hotel_id") @db.VarChar(50)
+  amenityId BigInt  @map("amenity_id")
+  amenity   Amenity @relation(fields: [amenityId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  hotel     Hotel   @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([hotelId, amenityId])
+  @@map("hotel_amenities")
+}
+
+model HotelImage {
+  id        BigInt   @id @default(autoincrement())
+  hotelId   String   @map("hotel_id") @db.VarChar(50)
+  url       String   @map("image_url")
+  isCover   Boolean  @default(false) @map("is_cover")
+  sortOrder Int      @default(1) @map("sort_order")
+  altText   String?  @map("alt_text") @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  hotel     Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("hotel_images")
+}
+
+model HotelPolicy {
+  id         BigInt           @id @default(autoincrement())
+  hotelId    String           @map("hotel_id") @db.VarChar(50)
+  policyType policy_type_enum @default(general) @map("policy_type")
+  title      String?          @db.VarChar(150)
+  content    String
+  sortOrder  Int              @default(1) @map("sort_order")
+  createdAt  DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  hotel      Hotel            @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("hotel_policies")
+}
+
+model Hotel {
+  id               String            @id @db.VarChar(50)
+  code             String            @unique @db.VarChar(30)
+  slug             String            @unique @db.VarChar(255)
+  name             String            @db.VarChar(255)
+  hotelType        hotel_type_enum   @default(hotel) @map("hotel_type")
+  status           hotel_status_enum @default(published)
+  location         String            @db.VarChar(255)
+  addressLine      String?           @map("address_line") @db.VarChar(255)
+  city             String            @db.VarChar(100)
+  district         String?           @db.VarChar(100)
+  ward             String?           @db.VarChar(100)
+  country          String            @default("Việt Nam") @db.VarChar(100)
+  postalCode       String?           @map("postal_code") @db.VarChar(20)
+  contactPhone     String?           @map("contact_phone") @db.VarChar(20)
+  contactEmail     String?           @map("contact_email") @db.Citext
+  stars            Int               @db.SmallInt
+  rating           Decimal           @default(0.0) @map("rating_avg") @db.Decimal(2, 1)
+  reviewCount      Int               @default(0) @map("review_count")
+  shortDescription String?           @map("short_description")
+  description      String
+  pricePerNight    Decimal           @default(0) @map("price_per_night") @db.Decimal(14, 2)
+  popular          Boolean           @default(false)
+  promoted         Boolean           @default(false)
+  isFeatured       Boolean           @default(false) @map("is_featured")
+  isActive         Boolean           @default(true) @map("is_active")
+  checkInTime      DateTime          @default(dbgenerated("'14:00:00'::time without time zone")) @map("check_in_time") @db.Time(6)
+  checkOutTime     DateTime          @default(dbgenerated("'12:00:00'::time without time zone")) @map("check_out_time") @db.Time(6)
+  latitude         Decimal?          @db.Decimal(10, 6)
+  longitude        Decimal?          @db.Decimal(10, 6)
+  seoTitle         String?           @map("seo_title") @db.VarChar(255)
+  seoDescription   String?           @map("seo_description")
+  publishedAt      DateTime?         @map("published_at") @db.Timestamptz(6)
+  createdBy        String?           @map("created_by") @db.Uuid
+  updatedBy        String?           @map("updated_by") @db.Uuid
+  deletedAt        DateTime?         @map("deleted_at") @db.Timestamptz(6)
+  deletedBy        String?           @map("deleted_by") @db.Uuid
+  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime          @default(now()) @map("updated_at") @db.Timestamptz(6)
+  bookings         Booking[]
+  amenities        HotelAmenity[]
+  images           HotelImage[]
+  policies         HotelPolicy[]
+  creator          AppUser?          @relation("hotels_created_byToapp_users", fields: [createdBy], references: [id], onUpdate: NoAction)
+  deleter          AppUser?          @relation("hotels_deleted_byToapp_users", fields: [deletedBy], references: [id], onUpdate: NoAction)
+  updater          AppUser?          @relation("hotels_updated_byToapp_users", fields: [updatedBy], references: [id], onUpdate: NoAction)
+  promotions       PromotionHotel[]
+  reviews          Review[]
+  rooms            Room[]
+
+  @@index([city], map: "idx_hotels_city")
+  @@index([isFeatured], map: "idx_hotels_featured")
+  @@index([pricePerNight], map: "idx_hotels_price")
+  @@index([stars], map: "idx_hotels_stars")
+  @@index([status], map: "idx_hotels_status")
+  @@map("hotels")
+}
+
+model Payment {
+  id                BigInt              @id @default(autoincrement())
+  bookingId         String              @unique @map("booking_id") @db.VarChar(40)
+  paymentMethod     payment_method_enum @map("payment_method")
+  paymentStatus     payment_status_enum @default(pending) @map("payment_status")
+  amount            Decimal             @db.Decimal(14, 2)
+  transactionId     String?             @map("transaction_id") @db.VarChar(100)
+  providerReference String?             @map("provider_reference") @db.VarChar(100)
+  cardLast4         String?             @map("card_last4") @db.VarChar(4)
+  cardExpiry        String?             @map("card_expiry") @db.VarChar(5)
+  paidAt            DateTime?           @map("paid_at") @db.Timestamptz(6)
+  createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  booking           Booking             @relation(fields: [bookingId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([paymentStatus], map: "idx_payments_status")
+  @@map("payments")
+}
+
+model PromotionHotel {
+  promotionId String    @map("promotion_id") @db.VarChar(30)
+  hotelId     String    @map("hotel_id") @db.VarChar(50)
+  hotel       Hotel     @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  promotion   Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([promotionId, hotelId])
+  @@map("promotion_hotels")
+}
+
+model PromotionRoom {
+  promotionId String    @map("promotion_id") @db.VarChar(30)
+  roomId      String    @map("room_id") @db.VarChar(80)
+  promotion   Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  room        Room      @relation(fields: [roomId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([promotionId, roomId])
+  @@map("promotion_rooms")
+}
+
+model Promotion {
+  id                String             @id @db.VarChar(30)
+  code              String             @unique @db.VarChar(50)
+  title             String             @db.VarChar(200)
+  description       String?
+  discountType      discount_type_enum @default(percent) @map("discount_type")
+  discountValue     Decimal            @map("discount_value") @db.Decimal(14, 2)
+  minOrderAmount    Decimal?           @default(0) @map("min_order_amount") @db.Decimal(14, 2)
+  maxDiscountAmount Decimal?           @map("max_discount_amount") @db.Decimal(14, 2)
+  startDate         DateTime?          @map("start_date") @db.Date
+  endDate           DateTime?          @map("end_date") @db.Date
+  usageLimit        Int?               @map("usage_limit")
+  usedCount         Int                @default(0) @map("used_count")
+  isActive          Boolean            @default(true) @map("is_active")
+  imageUrl          String?            @map("image_url") @db.VarChar(255)
+  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  bookings          Booking[]
+  promotion_hotels  PromotionHotel[]
+  promotion_rooms   PromotionRoom[]
+
+  @@map("promotions")
+}
+
+model Review {
+  id         String   @id @db.VarChar(100)
+  hotelId    String   @map("hotel_id") @db.VarChar(50)
+  userId     String?  @map("user_id") @db.Uuid
+  userName   String   @map("user_name") @db.VarChar(150)
+  avatar     String?  @db.VarChar(20)
+  rating     Int      @db.SmallInt
+  comment    String
+  reviewDate DateTime @map("review_date") @db.Date
+  isVisible  Boolean  @default(true) @map("is_visible")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  hotel      Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user       AppUser? @relation(fields: [userId], references: [id], onUpdate: NoAction)
+  media      ReviewMedia[]
+
+  @@index([hotelId], map: "idx_reviews_hotel")
+  @@map("reviews")
+}
+
+model ReviewMedia {
+  id        BigInt   @id @default(autoincrement())
+  reviewId  String   @map("review_id") @db.VarChar(100)
+  url       String
+  mediaType String   @default("image") @map("media_type") @db.VarChar(20)
+  sortOrder Int      @default(1) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([reviewId], map: "idx_review_media_review")
+  @@map("review_media")
+}
+
+model RoomAmenity {
+  roomId    String  @map("room_id") @db.VarChar(80)
+  amenityId BigInt  @map("amenity_id")
+  amenity   Amenity @relation(fields: [amenityId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  room      Room    @relation(fields: [roomId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([roomId, amenityId])
+  @@map("room_amenities")
+}
+
+model RoomImage {
+  id        BigInt   @id @default(autoincrement())
+  roomId    String   @map("room_id") @db.VarChar(80)
+  url       String   @map("image_url")
+  isCover   Boolean  @default(false) @map("is_cover")
+  sortOrder Int      @default(1) @map("sort_order")
+  altText   String?  @map("alt_text") @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("room_images")
+}
+
+
+
+model Room {
+  id                String           @id @db.VarChar(80)
+  hotelId           String           @map("hotel_id") @db.VarChar(50)
+  code              String           @db.VarChar(40)
+  name              String           @db.VarChar(150)
+  image             String?          @map("image_url")
+  description       String?
+  size              Int?             @map("size_m2")
+  maxGuests         Int              @map("max_guests") @db.SmallInt
+  maxAdults         Int              @default(1) @map("max_adults") @db.SmallInt
+  maxChildren       Int              @default(0) @map("max_children") @db.SmallInt
+  bedType           String?          @map("bed_type") @db.VarChar(50)
+  bedCount          Int              @default(1) @map("bed_count") @db.SmallInt
+  bathroomCount     Int              @default(1) @map("bathroom_count") @db.SmallInt
+  roomView          String?          @map("room_view") @db.VarChar(50)
+  hasBalcony        Boolean          @default(false) @map("has_balcony")
+  hasBathtub        Boolean          @default(false) @map("has_bathtub")
+  price             Decimal          @map("price_per_night") @db.Decimal(14, 2)
+  salePrice         Decimal?         @map("sale_price") @db.Decimal(14, 2)
+  quantityAvailable Int              @default(10) @map("quantity_available")
+  status            room_status_enum @default(active)
+  isActive          Boolean          @default(true) @map("is_active")
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime         @default(now()) @map("updated_at") @db.Timestamptz(6)
+  bookingItems      BookingItem[]
+  promotion_rooms   PromotionRoom[]
+  amenities         RoomAmenity[]
+  images            RoomImage[]
+  hotel             Hotel            @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([hotelId, code], map: "uq_rooms_hotel_code")
+  @@index([hotelId], map: "idx_rooms_hotel")
+  @@index([price], map: "idx_rooms_price")
+  @@index([status], map: "idx_rooms_status")
+  @@map("rooms")
+}
+
+enum amenity_scope_enum {
+  hotel
+  room
+  general
+}
+
+enum booking_status_enum {
+  pending
+  confirmed
+  checked_in
+  checked_out
+  cancelled
+}
+
+enum discount_type_enum {
+  percent
+  amount
+}
+
+enum hotel_status_enum {
+  draft
+  published
+  hidden
+  archived
+}
+
+enum hotel_type_enum {
+  hotel
+  resort
+  villa
+  apartment
+  homestay
+}
+
+enum payment_method_enum {
+  pay_at_hotel
+  card
+  ewallet
+  bank_transfer
+}
+
+enum payment_status_enum {
+  pending
+  paid
+  failed
+  refunded
+  cancelled
+}
+
+enum policy_type_enum {
+  general
+  checkin_checkout
+  cancellation
+  children
+  pets
+  smoking
+  deposit
+  extra_bed
+}
+
+enum room_status_enum {
+  active
+  inactive
+  maintenance
+  sold_out
+}
+
+enum user_role_enum {
+  customer
+  staff
+  admin
+}
+
+model Contact {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String   @db.VarChar(150)
+  email     String   @db.Citext
+  phone     String?  @db.VarChar(20)
+  subject   String   @db.VarChar(200)
+  message   String   @db.Text
+  status    contact_status_enum @default(new)
+  replyMessage String? @map("reply_message") @db.Text
+  repliedAt DateTime? @map("replied_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("contacts")
+}
+
+enum contact_status_enum {
+  new
+  read
+  replied
+}

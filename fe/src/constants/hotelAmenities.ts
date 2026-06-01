@@ -1,0 +1,18 @@
+export const HOTEL_AMENITY_OPTIONS = [
+  "WiFi miễn phí",
+  "Hồ bơi",
+  "Spa & Wellness",
+  "Nhà hàng",
+  "Phòng gym",
+  "Bãi đậu xe",
+  "Ăn sáng miễn phí",
+  "Lễ tân 24/7",
+  "Xe đưa đón sân bay",
+  "Phòng gia đình",
+  "Điều hòa",
+  "TV màn hình phẳng",
+  "Ban công",
+  "View biển",
+  "View thành phố",
+  "Cho phép thú cưng",
+];
