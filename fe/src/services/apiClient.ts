@@ -7,7 +7,7 @@ import {
   getPortalStoredUser,
 } from "@/services/authSession";
 
-export const BASE_URL = (import.meta.env.VITE_API_BASE_URL || "https://REPLACE_ME_WITH_YOUR_BACKEND_URL.onrender.com").replace(/\/+$/, "");
+export const BASE_URL = (import.meta.env.VITE_API_BASE_URL || "https://luxury-lodging-hub.onrender.com").replace(/\/+$/, "");
 const API_BASE_URL = `${BASE_URL}/api`;
 
 export class ApiError extends Error {
