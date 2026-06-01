@@ -26,7 +26,16 @@ async function bootstrap() {
     .filter(Boolean);
 
   app.enableCors({
-    origin: ['http://localhost:8080', 'http://localhost:8081', 'https://luxury-lodging-hub.vercel.app', ...configuredFrontendUrls],
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'http://localhost:8080',
+      'http://localhost:8081',
+      'https://luxury-lodging-hub.vercel.app',
+      ...configuredFrontendUrls
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   });
 
