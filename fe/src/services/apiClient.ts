@@ -29,6 +29,15 @@ export const getImageUrl = (url: any) => {
   if (!imagePath) return fallbackUrl;
 
   if (imagePath.startsWith("http")) {
+    try {
+      const parsedUrl = new URL(imagePath);
+      if (["localhost", "127.0.0.1", "::1"].includes(parsedUrl.hostname) && parsedUrl.pathname.startsWith("/uploads/")) {
+        return `${BASE_URL}${parsedUrl.pathname}${parsedUrl.search}`;
+      }
+    } catch {
+      // Fall through to the original URL handling below.
+    }
+
     if (imagePath.includes("unsplash.com")) {
       const baseUrl = imagePath.split("?")[0];
       return `${baseUrl}${highResParams}`;
