@@ -402,8 +402,10 @@ export class HotelsService {
       ];
     }
 
-    const requestedRooms = Math.max(1, Number(query.rooms || 1));
-    const requestedGuests = Math.max(1, Number(query.guests || 1));
+    const parsedRooms = parseInt(query.rooms as any, 10);
+    const requestedRooms = isNaN(parsedRooms) ? 1 : Math.max(1, parsedRooms);
+    const parsedGuests = parseInt(query.guests as any, 10);
+    const requestedGuests = isNaN(parsedGuests) ? 1 : Math.max(1, parsedGuests);
     const hasDateRange = Boolean(query.checkIn && query.checkOut);
     const checkIn = hasDateRange ? new Date(query.checkIn as string) : null;
     const checkOut = hasDateRange ? new Date(query.checkOut as string) : null;
@@ -483,8 +485,10 @@ export class HotelsService {
   }
 
   async findOne(id: string, query: QueryHotelsDto = {}) {
-    const requestedRooms = Math.max(1, Number(query.rooms || 1));
-    const requestedGuests = Math.max(1, Number(query.guests || 1));
+    const parsedRooms = parseInt(query.rooms as any, 10);
+    const requestedRooms = isNaN(parsedRooms) ? 1 : Math.max(1, parsedRooms);
+    const parsedGuests = parseInt(query.guests as any, 10);
+    const requestedGuests = isNaN(parsedGuests) ? 1 : Math.max(1, parsedGuests);
     const hasDateRange = Boolean(query.checkIn && query.checkOut);
     const checkIn = hasDateRange ? new Date(query.checkIn as string) : null;
     const checkOut = hasDateRange ? new Date(query.checkOut as string) : null;
