@@ -41,8 +41,8 @@ export class PaymentsService {
     const accessKey = this.getRequiredConfig('MOMO_ACCESS_KEY');
     const secretKey = this.getRequiredConfig('MOMO_SECRET_KEY');
     const endpoint = this.configService.get<string>('MOMO_ENDPOINT') || 'https://test-payment.momo.vn/v2/gateway/api/create';
-    const redirectUrl = this.getRequiredConfig('MOMO_REDIRECT_URL');
-    const ipnUrl = this.getRequiredConfig('MOMO_IPN_URL');
+    const redirectUrl = this.resolveBackendCallbackUrl('MOMO_REDIRECT_URL', '/api/payments/momo/return');
+    const ipnUrl = this.resolveBackendCallbackUrl('MOMO_IPN_URL', '/api/payments/momo/ipn');
     const requestType = this.configService.get<string>('MOMO_REQUEST_TYPE') || 'payWithMethod';
 
     const requestId = `${booking.bookingCode}-${Date.now()}`;
@@ -191,7 +191,7 @@ export class PaymentsService {
   }
 
   async handleMomoReturn(payload: MomoResultPayload) {
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:8080';
+    const frontendUrl = this.resolveFrontendUrl();
     const result = await this.processMomoResult(payload, false);
     const status = result.success ? 'success' : 'failed';
     const bookingId = result.bookingId || this.decodeExtraData(payload.extraData)?.bookingId || '';
@@ -339,6 +339,67 @@ export class PaymentsService {
       throw new BadRequestException(`Thieu cau hinh ${key}.`);
     }
     return value;
+  }
+
+  private getConfig(key: string) {
+    return this.configService.get<string>(key)?.trim();
+  }
+
+  private trimTrailingSlash(value: string) {
+    return value.replace(/\/+$/, '');
+  }
+
+  private isLoopbackUrl(value?: string) {
+    if (!value) return false;
+    try {
+      const { hostname } = new URL(value);
+      return ['localhost', '127.0.0.1', '::1'].includes(hostname);
+    } catch {
+      return false;
+    }
+  }
+
+  private resolveBackendPublicUrl() {
+    const candidates = [
+      this.getConfig('PUBLIC_API_URL'),
+      this.getConfig('BACKEND_PUBLIC_URL'),
+      this.getConfig('RENDER_EXTERNAL_URL'),
+    ].filter(Boolean) as string[];
+
+    const publicUrl = candidates.find((url) => /^https?:\/\//i.test(url) && !this.isLoopbackUrl(url));
+    return publicUrl ? this.trimTrailingSlash(publicUrl) : '';
+  }
+
+  private resolveBackendCallbackUrl(configKey: string, path: string) {
+    const configured = this.getConfig(configKey);
+    if (configured && !this.isLoopbackUrl(configured)) {
+      return configured;
+    }
+
+    const publicBackendUrl = this.resolveBackendPublicUrl();
+    if (publicBackendUrl) {
+      return `${publicBackendUrl}${path}`;
+    }
+
+    if (configured) {
+      return configured;
+    }
+
+    throw new BadRequestException(`Thieu cau hinh ${configKey}.`);
+  }
+
+  private resolveFrontendUrl() {
+    const configured = this.getConfig('FRONTEND_URL');
+    if (configured && !this.isLoopbackUrl(configured)) {
+      return this.trimTrailingSlash(configured);
+    }
+
+    const vercelUrl = this.getConfig('VERCEL_URL');
+    if (vercelUrl) {
+      return this.trimTrailingSlash(vercelUrl.startsWith('http') ? vercelUrl : `https://${vercelUrl}`);
+    }
+
+    return configured ? this.trimTrailingSlash(configured) : 'http://localhost:8080';
   }
 
   private sign(rawSignature: string, secretKey: string) {

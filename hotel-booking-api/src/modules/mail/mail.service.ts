@@ -9,11 +9,15 @@ export class MailService {
   constructor(private readonly configService: ConfigService) {
     const user = this.configService.get<string>('MAIL_USER')?.trim();
     const pass = this.configService.get<string>('MAIL_PASS')?.replace(/\s/g, '');
+    const timeoutMs = this.getTimeoutMs();
 
     this.transporter = nodemailer.createTransport({
       host: this.configService.get<string>('MAIL_HOST'),
       port: Number(this.configService.get<string>('MAIL_PORT') || 587),
       secure: false,
+      connectionTimeout: timeoutMs,
+      greetingTimeout: timeoutMs,
+      socketTimeout: timeoutMs,
       auth: {
         user,
         pass,
@@ -24,12 +28,26 @@ export class MailService {
     });
   }
 
+  private getTimeoutMs() {
+    return Number(this.configService.get<string>('MAIL_TIMEOUT_MS') || 10000);
+  }
+
+  private async sendWithTimeout(options: nodemailer.SendMailOptions) {
+    const timeoutMs = this.getTimeoutMs();
+    return Promise.race([
+      this.transporter.sendMail(options),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error(`Mail sending timed out after ${timeoutMs}ms`)), timeoutMs + 1000),
+      ),
+    ]);
+  }
+
   async sendOtpEmail(to: string, otp: string) {
     const from =
       this.configService.get<string>('MAIL_FROM') ||
       this.configService.get<string>('MAIL_USER');
 
-    await this.transporter.sendMail({
+    await this.sendWithTimeout({
       from,
       to,
       subject: 'Mã xác thực đăng ký LuxStay',
@@ -55,7 +73,7 @@ export class MailService {
       this.configService.get<string>('MAIL_FROM') ||
       this.configService.get<string>('MAIL_USER');
 
-    await this.transporter.sendMail({
+    await this.sendWithTimeout({
       from,
       to,
       subject: 'Ma dat lai mat khau LuxStay',
