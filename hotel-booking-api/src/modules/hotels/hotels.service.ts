@@ -442,7 +442,10 @@ export class HotelsService {
                       checkOut: { gt: checkIn as Date },
                     },
                   },
-                  select: { roomsCount: true },
+                  select: { 
+                    roomsCount: true,
+                    booking: { select: { checkIn: true, checkOut: true } }
+                  },
                 }
               : false,
           },
@@ -453,9 +456,22 @@ export class HotelsService {
     return hotels
       .map((hotel) => {
         const rooms = hotel.rooms.map((room: any) => {
-          const reservedUnits = hasDateRange
-            ? room.bookingItems.reduce((sum: number, item: any) => sum + Number(item.roomsCount || 0), 0)
-            : 0;
+          let reservedUnits = 0;
+          if (hasDateRange && room.bookingItems) {
+            for (let d = new Date(checkIn as Date); d < (checkOut as Date); d.setDate(d.getDate() + 1)) {
+              let dailyReserved = 0;
+              for (const item of room.bookingItems) {
+                const bCheckIn = new Date(item.booking.checkIn);
+                const bCheckOut = new Date(item.booking.checkOut);
+                if (d >= bCheckIn && d < bCheckOut) {
+                  dailyReserved += Number(item.roomsCount || 0);
+                }
+              }
+              if (dailyReserved > reservedUnits) {
+                reservedUnits = dailyReserved;
+              }
+            }
+          }
           const availableUnits = Math.max(0, Number(room.quantityAvailable || 0) - reservedUnits);
           const { bookingItems, ...publicRoom } = room;
 
@@ -528,7 +544,10 @@ export class HotelsService {
                       checkOut: { gt: checkIn as Date },
                     },
                   },
-                  select: { roomsCount: true },
+                  select: { 
+                    roomsCount: true,
+                    booking: { select: { checkIn: true, checkOut: true } }
+                  },
                 }
               : false,
           },
@@ -580,9 +599,22 @@ export class HotelsService {
       }),
       rooms: hotel.rooms
         .map((room: any) => {
-          const reservedUnits = hasDateRange
-            ? room.bookingItems.reduce((sum: number, item: any) => sum + Number(item.roomsCount || 0), 0)
-            : 0;
+          let reservedUnits = 0;
+          if (hasDateRange && room.bookingItems) {
+            for (let d = new Date(checkIn as Date); d < (checkOut as Date); d.setDate(d.getDate() + 1)) {
+              let dailyReserved = 0;
+              for (const item of room.bookingItems) {
+                const bCheckIn = new Date(item.booking.checkIn);
+                const bCheckOut = new Date(item.booking.checkOut);
+                if (d >= bCheckIn && d < bCheckOut) {
+                  dailyReserved += Number(item.roomsCount || 0);
+                }
+              }
+              if (dailyReserved > reservedUnits) {
+                reservedUnits = dailyReserved;
+              }
+            }
+          }
           const availableUnits = Math.max(0, Number(room.quantityAvailable || 0) - reservedUnits);
           const { bookingItems, ...publicRoom } = room;
 

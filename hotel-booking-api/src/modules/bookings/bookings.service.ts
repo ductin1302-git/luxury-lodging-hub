@@ -236,12 +236,26 @@ export class BookingsService {
               checkOut: { gt: checkIn },
             },
           },
-          select: { roomsCount: true },
+          select: { 
+            roomsCount: true,
+            booking: { select: { checkIn: true, checkOut: true } }
+          },
         });
-        const reservedUnits = overlappingBookings.reduce(
-          (sum, item) => sum + Number(item.roomsCount || 0),
-          0,
-        );
+        
+        let reservedUnits = 0;
+        for (let d = new Date(checkIn); d < checkOut; d.setDate(d.getDate() + 1)) {
+          let dailyReserved = 0;
+          for (const item of overlappingBookings) {
+            const bCheckIn = new Date(item.booking.checkIn);
+            const bCheckOut = new Date(item.booking.checkOut);
+            if (d >= bCheckIn && d < bCheckOut) {
+              dailyReserved += Number(item.roomsCount || 0);
+            }
+          }
+          if (dailyReserved > reservedUnits) {
+            reservedUnits = dailyReserved;
+          }
+        }
         const availableUnits = Number(room.quantityAvailable || 0) - reservedUnits;
 
         if (availableUnits < dto.roomsCount) {
