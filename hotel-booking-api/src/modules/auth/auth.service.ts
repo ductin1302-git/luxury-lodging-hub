@@ -219,7 +219,7 @@ export class AuthService {
       const otp = dto.otp.replace(/\s/g, '').trim();
 
       if (dto.password !== dto.confirmPassword) {
-        throw new BadRequestException('Mat khau nhap lai khong khop.');
+        throw new BadRequestException('Mật khẩu nhập lại không khớp.');
       }
 
       // Check if OTP was verified for this email
@@ -359,7 +359,7 @@ export class AuthService {
 
   async setPassword(userId: string, dto: SetPasswordDto) {
     if (dto.password !== dto.confirmPassword) {
-      throw new BadRequestException('Mat khau nhap lai khong khop.');
+      throw new BadRequestException('Mật khẩu nhập lại không khớp.');
     }
 
     const user = await this.prisma.appUser.findUnique({
@@ -367,7 +367,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Tai khoan khong ton tai.');
+      throw new UnauthorizedException('Tài khoản không tồn tại.');
     }
 
     if (user.passwordHash) {
@@ -422,12 +422,12 @@ export class AuthService {
     const otp = dto.otp.replace(/\s/g, '').trim();
 
     if (dto.newPassword !== dto.confirmPassword) {
-      throw new BadRequestException('Mat khau nhap lai khong khop.');
+      throw new BadRequestException('Mật khẩu nhập lại không khớp.');
     }
 
     const user = await this.usersService.findByEmail(email);
     if (!user) {
-      throw new BadRequestException('Ma xac thuc khong dung hoac da het han.');
+      throw new BadRequestException('Mã xác thực không đúng hoặc đã hết hạn.');
     }
 
     const record = await this.prisma.otp.findFirst({
@@ -441,7 +441,7 @@ export class AuthService {
     });
 
     if (!record || new Date(record.expiresAt) < new Date()) {
-      throw new BadRequestException('Ma xac thuc khong dung hoac da het han.');
+      throw new BadRequestException('Mã xác thực không đúng hoặc đã hết hạn.');
     }
 
     const hashedPassword = await bcrypt.hash(dto.newPassword, 10);

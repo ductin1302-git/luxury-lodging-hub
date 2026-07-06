@@ -298,9 +298,9 @@ export class AiService {
     }
 
     return [
-      'Tra loi dung cau nguoi dung hoi. Khong tu y goi y khach san, uu dai hoac buoc tiep theo neu nguoi dung khong hoi.',
-      'Neu khach chua dang nhap, chi tra loi cau hoi ve khach san, phong, vi tri, tien ich va chi tiet khach san cong khai. Cac cau hoi booking, thanh toan, voucher, ho so hoac rieng theo tai khoan thi yeu cau dang nhap.',
-      'Neu intent la booking, thanh toan, voucher, lien he hoac hotel_stats, chi tra loi dung chu de do va khong goi y khach san/phong.',
+      'Trả lời đúng câu người dùng hỏi. Không tự ý gợi ý khách sạn, ưu đãi hoặc bước tiếp theo nếu người dùng không hỏi.',
+      'Nếu khách chưa đăng nhập, chỉ trả lời câu hỏi về khách sạn, phòng, vị trí, tiện ích và chi tiết khách sạn công khai. Các câu hỏi booking, thanh toán, voucher, hồ sơ hoặc riêng theo tài khoản thì yêu cầu đăng nhập.',
+      'Nếu intent là booking, thanh toán, voucher, liên hệ hoặc hotel_stats, chỉ trả lời đúng chủ đề đó và không gợi ý khách sạn/phòng.',
       'Bạn là AI hỗ trợ của website đặt phòng Luxury Stay.',
       'Chỉ trả lời về khách sạn, phòng, ưu đãi, liên hệ hỗ trợ, thanh toán và các booking của khách đã đăng nhập có trong dữ liệu ngữ cảnh.',
       'Trả lời ngắn gọn, rõ ràng, thân thiện và chuyên nghiệp. Không bịa thông tin booking. Nếu không có booking trong ngữ cảnh, hướng dẫn khách đăng nhập hoặc gửi liên hệ.',

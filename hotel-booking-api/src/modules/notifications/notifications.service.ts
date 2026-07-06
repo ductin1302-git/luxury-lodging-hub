@@ -56,7 +56,7 @@ export class NotificationsService {
     });
 
     if (!notification) {
-      throw new NotFoundException('Thong bao khong ton tai.');
+      throw new NotFoundException('Thông báo không tồn tại.');
     }
 
     return this.notificationClient.update({
@@ -157,10 +157,10 @@ export class NotificationsService {
       recipientUserId: booking.userId,
       scope: 'user',
       kind: 'user_booking',
-      title: `Da tiep nhan don ${booking.bookingCode}`,
-      message: `Luxury Stay da ghi nhan yeu cau dat phong tai ${booking.hotelNameSnapshot}. Chung toi se cap nhat ngay khi trang thai thay doi.`,
+      title: `Đã tiếp nhận đơn ${booking.bookingCode}`,
+      message: `Luxury Stay đã ghi nhận yêu cầu đặt phòng tại ${booking.hotelNameSnapshot}. Chúng tôi sẽ cập nhật ngay khi trạng thái thay đổi.`,
       href: `/my-bookings/${booking.id}`,
-      statusLabel: 'Moi tao',
+      statusLabel: 'Mới tạo',
       entityType: 'booking',
       entityId: booking.id,
       eventKey: `user-booking-created:${booking.id}:${booking.status}:${booking.paymentStatus}:${booking.userId}`,
@@ -181,10 +181,10 @@ export class NotificationsService {
   }) {
     await this.createForAdmins({
       kind: 'admin_booking',
-      title: `Don dat phong moi tu ${booking.guestName}`,
+      title: `Đơn đặt phòng mới từ ${booking.guestName}`,
       message: `${booking.hotelNameSnapshot} • ${this.formatCurrency(Number(booking.total || 0))}`,
       href: `/admin/bookings/view/${booking.id}`,
-      statusLabel: 'Moi tao',
+      statusLabel: 'Mới tạo',
       entityType: 'booking',
       entityId: booking.id,
       eventKeyBase: `admin-booking-created:${booking.id}`,
@@ -306,10 +306,10 @@ export class NotificationsService {
   }) {
     await this.createForAdmins({
       kind: 'admin_contact',
-      title: `Lien he moi tu ${contact.name}`,
-      message: contact.subject || 'Khach hang vua gui mot yeu cau moi.',
+      title: `Liên hệ mới từ ${contact.name}`,
+      message: contact.subject || 'Khách hàng vừa gửi một yêu cầu mới.',
       href: `/admin/contact/view/${contact.id}`,
-      statusLabel: 'Moi',
+      statusLabel: 'Mới',
       entityType: 'contact',
       entityId: contact.id,
       eventKeyBase: `admin-contact-created:${contact.id}`,
@@ -341,10 +341,10 @@ export class NotificationsService {
       recipientUserId: recipient.id,
       scope: 'user',
       kind: 'contact_reply',
-      title: `Da phan hoi yeu cau "${contact.subject}"`,
-      message: contact.replyMessage?.trim() || 'Bo phan ho tro da gui phan hoi moi cho yeu cau cua ban.',
+      title: `Đã phản hồi yêu cầu "${contact.subject}"`,
+      message: contact.replyMessage?.trim() || 'Bộ phận hỗ trợ đã gửi phản hồi mới cho yêu cầu của bạn.',
       href: `/support/messages/${contact.id}`,
-      statusLabel: 'Da phan hoi',
+      statusLabel: 'Đã phản hồi',
       entityType: 'contact',
       entityId: contact.id,
       eventKey: `user-contact-reply:${contact.id}:${recipient.id}`,
@@ -358,34 +358,34 @@ export class NotificationsService {
     switch (status) {
       case 'confirmed':
         return {
-          title: 'Don dat phong da duoc xac nhan',
-          message: note?.trim() || `Khach san ${hotelName} da xac nhan dat phong cua ban. Ban co the xem chi tiet de chuan bi cho ky nghi.`,
-          statusLabel: 'Da xac nhan',
+          title: 'Đơn đặt phòng đã được xác nhận',
+          message: note?.trim() || `Khách sạn ${hotelName} đã xác nhận đặt phòng của bạn. Bạn có thể xem chi tiết để chuẩn bị cho kỳ nghỉ.`,
+          statusLabel: 'Đã xác nhận',
         };
       case 'checked_in':
         return {
-          title: 'Ban da check-in thanh cong',
-          message: note?.trim() || `Chuc ban co mot ky nghi tuyet voi tai ${hotelName}.`,
-          statusLabel: 'Dang luu tru',
+          title: 'Bạn đã check-in thành công',
+          message: note?.trim() || `Chúc bạn có một kỳ nghỉ tuyệt vời tại ${hotelName}.`,
+          statusLabel: 'Đang lưu trú',
         };
       case 'checked_out':
         return {
-          title: 'Don luu tru da hoan tat',
-          message: note?.trim() || `Cam on ban da lua chon ${hotelName}. Hy quay lai bat cu luc nao.`,
-          statusLabel: 'Hoan tat',
+          title: 'Đơn lưu trú đã hoàn tất',
+          message: note?.trim() || `Cảm ơn bạn đã lựa chọn ${hotelName}. Hãy quay lại bất cứ lúc nào.`,
+          statusLabel: 'Hoàn tất',
         };
       case 'cancelled':
         return {
-          title: 'Don dat phong da bi huy',
-          message: note?.trim() || `Dat phong tai ${hotelName} da duoc huy. Neu co hoan tien, he thong se thong bao tiep cho ban.`,
-          statusLabel: 'Da huy',
+          title: 'Đơn đặt phòng đã bị hủy',
+          message: note?.trim() || `Đặt phòng tại ${hotelName} đã được hủy. Nếu có hoàn tiền, hệ thống sẽ thông báo tiếp cho bạn.`,
+          statusLabel: 'Đã hủy',
         };
       case 'pending':
       default:
         return {
-          title: 'Don dat phong dang cho xu ly',
-          message: note?.trim() || `Yeu cau dat phong tai ${hotelName} dang duoc Luxury Stay xu ly.`,
-          statusLabel: 'Cho xu ly',
+          title: 'Đơn đặt phòng đang chờ xử lý',
+          message: note?.trim() || `Yêu cầu đặt phòng tại ${hotelName} đang được Luxury Stay xử lý.`,
+          statusLabel: 'Chờ xử lý',
         };
     }
   }
@@ -400,44 +400,44 @@ export class NotificationsService {
     switch (paymentStatus) {
       case 'paid':
         return {
-          title: 'Thanh toan thanh cong',
+          title: 'Thanh toán thành công',
           message:
             note?.trim() ||
-            `Luxury Stay da nhan ${this.formatCurrency(total)} cho dat phong tai ${hotelName}${transactionId ? `. Ma giao dich: ${transactionId}.` : '.'}`,
-          statusLabel: 'Da thanh toan',
+            `Luxury Stay đã nhận ${this.formatCurrency(total)} cho đặt phòng tại ${hotelName}${transactionId ? `. Mã giao dịch: ${transactionId}.` : '.'}`,
+          statusLabel: 'Đã thanh toán',
         };
       case 'failed':
         return {
-          title: 'Thanh toan that bai',
+          title: 'Thanh toán thất bại',
           message:
             note?.trim() ||
-            `Giao dich cho ${hotelName} khong thanh cong. Ban co the thu lai hoac chon phuong thuc thanh toan khac.`,
-          statusLabel: 'That bai',
+            `Giao dịch cho ${hotelName} không thành công. Bạn có thể thử lại hoặc chọn phương thức thanh toán khác.`,
+          statusLabel: 'Thất bại',
         };
       case 'refunded':
         return {
-          title: 'Tien da duoc hoan',
+          title: 'Tiền đã được hoàn',
           message:
             note?.trim() ||
-            `Khoan thanh toan cho ${hotelName} da duoc cap nhat hoan tien. Vui long kiem tra tai khoan nhan tien cua ban.`,
-          statusLabel: 'Da hoan tien',
+            `Khoản thanh toán cho ${hotelName} đã được cập nhật hoàn tiền. Vui lòng kiểm tra tài khoản nhận tiền của bạn.`,
+          statusLabel: 'Đã hoàn tiền',
         };
       case 'cancelled':
         return {
-          title: 'Thanh toan da bi huy',
+          title: 'Thanh toán đã bị hủy',
           message:
             note?.trim() ||
-            `Yeu cau thanh toan cho ${hotelName} da bi huy. Neu can ho tro, vui long lien he Luxury Stay.`,
-          statusLabel: 'Da huy',
+            `Yêu cầu thanh toán cho ${hotelName} đã bị hủy. Nếu cần hỗ trợ, vui lòng liên hệ Luxury Stay.`,
+          statusLabel: 'Đã hủy',
         };
       case 'pending':
       default:
         return {
-          title: 'Thanh toan dang cho xu ly',
+          title: 'Thanh toán đang chờ xử lý',
           message:
             note?.trim() ||
-            `He thong dang cho xac nhan thanh toan cho dat phong tai ${hotelName}.`,
-          statusLabel: 'Dang cho',
+            `Hệ thống đang chờ xác nhận thanh toán cho đặt phòng tại ${hotelName}.`,
+          statusLabel: 'Đang chờ',
         };
     }
   }
@@ -452,34 +452,34 @@ export class NotificationsService {
     switch (paymentStatus) {
       case 'paid':
         return {
-          title: `Thanh toan thanh cong tu ${guestName}`,
+          title: `Thanh toán thành công từ ${guestName}`,
           message: `${hotelName} • ${this.formatCurrency(total)}${transactionId ? ` • GD ${transactionId}` : ''}`,
-          statusLabel: 'Da thanh toan',
+          statusLabel: 'Đã thanh toán',
         };
       case 'refunded':
         return {
-          title: `Da hoan tien cho ${guestName}`,
+          title: `Đã hoàn tiền cho ${guestName}`,
           message: `${hotelName} • ${this.formatCurrency(total)}`,
-          statusLabel: 'Da hoan tien',
+          statusLabel: 'Đã hoàn tiền',
         };
       case 'failed':
         return {
-          title: `Thanh toan that bai cua ${guestName}`,
-          message: `${hotelName} • Can kiem tra lai giao dich`,
-          statusLabel: 'That bai',
+          title: `Thanh toán thất bại của ${guestName}`,
+          message: `${hotelName} • Cần kiểm tra lại giao dịch`,
+          statusLabel: 'Thất bại',
         };
       case 'cancelled':
         return {
-          title: `Thanh toan bi huy cua ${guestName}`,
-          message: `${hotelName} • Chua hoan tat giao dich`,
-          statusLabel: 'Da huy',
+          title: `Thanh toán bị hủy của ${guestName}`,
+          message: `${hotelName} • Chưa hoàn tất giao dịch`,
+          statusLabel: 'Đã hủy',
         };
       case 'pending':
       default:
         return {
-          title: `Thanh toan dang cho cua ${guestName}`,
-          message: `${hotelName} • Dang doi cap nhat he thong`,
-          statusLabel: 'Cho xu ly',
+          title: `Thanh toán đang chờ của ${guestName}`,
+          message: `${hotelName} • Đang đợi cập nhật hệ thống`,
+          statusLabel: 'Chờ xử lý',
         };
     }
   }

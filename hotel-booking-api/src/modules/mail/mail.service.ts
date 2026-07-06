@@ -81,12 +81,12 @@ export class MailService {
         <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111827; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px;">
           <h2 style="color: #1d4ed8; text-align: center;">Dat lai mat khau LuxStay</h2>
           <p>Xin chao,</p>
-          <p>Ban vua yeu cau dat lai mat khau tai <b>LuxStay</b>. Vui long dung ma duoi day de xac thuc:</p>
+          <p>Bạn vừa yêu cầu đặt lại mật khẩu tại <b>LuxStay</b>. Vui lòng dùng mã dưới đây để xác thực:</p>
           <div style="text-align: center; background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
             <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #1d4ed8;">${otp}</span>
           </div>
           <p>Ma co hieu luc trong <b>10 phut</b>.</p>
-          <p style="color: #6b7280; font-size: 14px;">Neu ban khong thuc hien yeu cau nay, vui long bo qua email nay.</p>
+          <p style="color: #6b7280; font-size: 14px;">Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email này.</p>
         </div>
       `,
     });

@@ -22,13 +22,13 @@ export class PaymentsService {
     });
 
     if (!booking) {
-      throw new NotFoundException('Booking khong ton tai.');
+      throw new NotFoundException('Booking không tồn tại.');
     }
     if (booking.status === 'cancelled') {
-      throw new BadRequestException('Booking da bi huy, khong the thanh toan.');
+      throw new BadRequestException('Booking đã bị hủy, không thể thanh toán.');
     }
     if (booking.paymentStatus === 'paid') {
-      throw new BadRequestException('Booking nay da duoc thanh toan.');
+      throw new BadRequestException('Booking này đã được thanh toán.');
     }
 
     const option = dto.paymentOption || 'full';
@@ -48,8 +48,8 @@ export class PaymentsService {
     const requestId = `${booking.bookingCode}-${Date.now()}`;
     const orderId = requestId;
     const orderInfo = option === 'deposit'
-      ? `Dat coc LuxStay ${booking.bookingCode}`
-      : `Thanh toan LuxStay ${booking.bookingCode}`;
+      ? `Đặt cọc LuxStay ${booking.bookingCode}`
+      : `Thanh toán LuxStay ${booking.bookingCode}`;
     const extraData = Buffer.from(JSON.stringify({
       bookingId: booking.id,
       userId,
@@ -107,13 +107,13 @@ export class PaymentsService {
     }).then(async (response) => {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new BadRequestException(data?.message || 'Khong the tao giao dich MoMo.');
+        throw new BadRequestException(data?.message || 'Không thể tạo giao dịch MoMo.');
       }
       return data;
     });
 
     if (Number(momoResponse.resultCode) !== 0 || !momoResponse.payUrl) {
-      throw new BadRequestException(momoResponse.message || 'MoMo tu choi tao giao dich.');
+      throw new BadRequestException(momoResponse.message || 'MoMo từ chối tạo giao dịch.');
     }
 
     await this.prisma.$transaction(async (tx) => {
@@ -177,7 +177,7 @@ export class PaymentsService {
     });
 
     if (!booking) {
-      throw new NotFoundException('Booking khong ton tai.');
+      throw new NotFoundException('Booking không tồn tại.');
     }
 
     return {
@@ -205,7 +205,7 @@ export class PaymentsService {
   private async processMomoResult(payload: MomoResultPayload, requireValidSignature: boolean) {
     const isValidSignature = this.verifyResultSignature(payload);
     if (requireValidSignature && !isValidSignature) {
-      throw new UnauthorizedException('Chu ky MoMo khong hop le.');
+      throw new UnauthorizedException('Chữ ký MoMo không hợp lệ.');
     }
     if (!isValidSignature) {
       return {
@@ -242,7 +242,7 @@ export class PaymentsService {
           transactionId: transId,
           adminNote: isSuccess
             ? this.buildMomoPaidNote(extra.paymentOption, Number(extra.totalAmount || booking.total), paidAmount, transId)
-            : `MoMo thanh toan that bai: ${payload.message || 'Khong ro ly do'}`,
+            : `MoMo thanh toán thất bại: ${payload.message || 'Không rõ lý do'}`,
           updatedAt: new Date(),
         },
       });
@@ -295,7 +295,7 @@ export class PaymentsService {
               paidAmount,
               transId,
             )
-          : `MoMo thanh toan that bai: ${payload.message || 'Khong ro ly do'}`,
+          : `MoMo thanh toán thất bại: ${payload.message || 'Không rõ lý do'}`,
       }),
     );
     await this.dispatchNotification('notify momo payment result for admins', () =>
@@ -408,19 +408,19 @@ export class PaymentsService {
 
   private buildMomoNote(option: 'full' | 'deposit', totalAmount: number, amount: number) {
     if (option === 'deposit') {
-      return `Cho thanh toan dat coc MoMo 30%. So tien coc: ${amount.toLocaleString('vi-VN')} VND. Tong tien phong: ${totalAmount.toLocaleString('vi-VN')} VND.`;
+      return `Chờ thanh toán đặt cọc MoMo 30%. Số tiền cọc: ${amount.toLocaleString('vi-VN')} VND. Tổng tiền phòng: ${totalAmount.toLocaleString('vi-VN')} VND.`;
     }
 
-    return `Cho thanh toan toan bo qua MoMo. So tien: ${amount.toLocaleString('vi-VN')} VND.`;
+    return `Chờ thanh toán toàn bộ qua MoMo. Số tiền: ${amount.toLocaleString('vi-VN')} VND.`;
   }
 
   private buildMomoPaidNote(option: string, totalAmount: number, amount: number, transId?: string) {
     if (option === 'deposit') {
       const remaining = Math.max(0, totalAmount - amount);
-      return `Khach da dat coc MoMo 30%. Ma giao dich: ${transId || 'N/A'}. Da thu: ${amount.toLocaleString('vi-VN')} VND. Con lai thu tai khach san: ${remaining.toLocaleString('vi-VN')} VND.`;
+      return `Khách đã đặt cọc MoMo 30%. Mã giao dịch: ${transId || 'N/A'}. Đã thu: ${amount.toLocaleString('vi-VN')} VND. Còn lại thu tại khách sạn: ${remaining.toLocaleString('vi-VN')} VND.`;
     }
 
-    return `Khach da thanh toan toan bo qua MoMo. Ma giao dich: ${transId || 'N/A'}. So tien: ${amount.toLocaleString('vi-VN')} VND.`;
+    return `Khách đã thanh toán toàn bộ qua MoMo. Mã giao dịch: ${transId || 'N/A'}. Số tiền: ${amount.toLocaleString('vi-VN')} VND.`;
   }
 
   private async dispatchNotification(label: string, task: () => Promise<unknown>) {

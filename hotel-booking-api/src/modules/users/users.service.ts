@@ -135,7 +135,7 @@ export class UsersService {
   async updateUserByAdmin(userId: string, data: any) {
     const existing = await this.prisma.appUser.findUnique({ where: { id: userId } });
     if (!existing) {
-      throw new NotFoundException('User khong ton tai');
+      throw new NotFoundException('Người dùng không tồn tại');
     }
 
     const updateData: any = {};
@@ -152,13 +152,13 @@ export class UsersService {
       const normalizedRole = data.role === 'user' ? 'customer' : data.role;
       const allowedRoles: user_role_enum[] = ['customer', 'staff', 'admin'];
       if (!allowedRoles.includes(normalizedRole as user_role_enum)) {
-        throw new BadRequestException('Vai tro khong hop le');
+        throw new BadRequestException('Vai trò không hợp lệ');
       }
       updateData.role = normalizedRole as user_role_enum;
     }
 
     if (Object.keys(updateData).length === 0) {
-      throw new BadRequestException('Khong co du lieu cap nhat');
+      throw new BadRequestException('Không có dữ liệu cập nhật');
     }
 
     return this.prisma.appUser.update({
@@ -181,12 +181,12 @@ export class UsersService {
 
   async deactivateUserByAdmin(userId: string, currentUserId?: string) {
     if (currentUserId && userId === currentUserId) {
-      throw new ConflictException('Khong the khoa chinh tai khoan dang dang nhap');
+      throw new ConflictException('Không thể khóa chính tài khoản đang đăng nhập');
     }
 
     const existing = await this.prisma.appUser.findUnique({ where: { id: userId } });
     if (!existing) {
-      throw new NotFoundException('User khong ton tai');
+      throw new NotFoundException('Người dùng không tồn tại');
     }
 
     return this.prisma.appUser.update({

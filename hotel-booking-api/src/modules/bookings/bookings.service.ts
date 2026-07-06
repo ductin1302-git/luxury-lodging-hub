@@ -171,7 +171,7 @@ export class BookingsService {
 
   private validatePromotionForBooking(promotion: any, subtotal: number, hotelId: string, roomId: string) {
     if (!promotion || !promotion.isActive) {
-      throw new BadRequestException('Ma voucher khong hop le hoac da het han.');
+      throw new BadRequestException('Mã voucher không hợp lệ hoặc đã hết hạn.');
     }
 
     const today = this.getTodayStart().getTime();
@@ -179,26 +179,26 @@ export class BookingsService {
     const endTime = promotion.endDate ? this.getTodayStart(promotion.endDate).getTime() : null;
 
     if ((startTime !== null && startTime > today) || (endTime !== null && endTime < today)) {
-      throw new BadRequestException('Ma voucher khong nam trong thoi gian ap dung.');
+      throw new BadRequestException('Mã voucher không nằm trong thời gian áp dụng.');
     }
 
     if (promotion.usageLimit && Number(promotion.usedCount || 0) >= Number(promotion.usageLimit)) {
-      throw new BadRequestException('Ma voucher da het luot su dung.');
+      throw new BadRequestException('Mã voucher đã hết lượt sử dụng.');
     }
 
     if (promotion.minOrderAmount && subtotal < Number(promotion.minOrderAmount)) {
-      throw new BadRequestException(`Don hang can toi thieu ${Number(promotion.minOrderAmount).toLocaleString('vi-VN')} VND de dung voucher nay.`);
+      throw new BadRequestException(`Đơn hàng cần tối thiểu ${Number(promotion.minOrderAmount).toLocaleString('vi-VN')} VND để dùng voucher này.`);
     }
 
     const scopedHotels = promotion.promotion_hotels || [];
     const scopedRooms = promotion.promotion_rooms || [];
 
     if (scopedHotels.length && !scopedHotels.some((item: any) => item.hotelId === hotelId)) {
-      throw new BadRequestException('Voucher nay khong ap dung cho khach san da chon.');
+      throw new BadRequestException('Voucher này không áp dụng cho khách sạn đã chọn.');
     }
 
     if (scopedRooms.length && !scopedRooms.some((item: any) => item.roomId === roomId)) {
-      throw new BadRequestException('Voucher nay khong ap dung cho phong da chon.');
+      throw new BadRequestException('Voucher này không áp dụng cho phòng đã chọn.');
     }
   }
 
@@ -211,14 +211,14 @@ export class BookingsService {
         });
 
         if (!room) {
-          throw new BadRequestException('Phong khong ton tai.');
+          throw new BadRequestException('Phòng không tồn tại.');
         }
 
         const checkIn = new Date(dto.checkIn);
         const checkOut = new Date(dto.checkOut);
 
         if (Number.isNaN(checkIn.getTime()) || Number.isNaN(checkOut.getTime()) || checkOut <= checkIn) {
-          throw new BadRequestException('Ngay nhan phong va tra phong khong hop le.');
+          throw new BadRequestException('Ngày nhận phòng và trả phòng không hợp lệ.');
         }
 
         if (dto.guests > room.maxGuests * dto.roomsCount) {
@@ -247,8 +247,8 @@ export class BookingsService {
         if (availableUnits < dto.roomsCount) {
           throw new BadRequestException(
             availableUnits <= 0
-              ? 'Phong nay hien da het. Vui long chon loai phong khac.'
-              : `Chi con ${availableUnits} phong trong cho khoang ngay ban chon.`,
+              ? 'Phòng này hiện đã hết. Vui lòng chọn loại phòng khác.'
+              : `Chỉ còn ${availableUnits} phòng trống cho khoảng ngày bạn chọn.`,
           );
         }
 
@@ -352,7 +352,7 @@ export class BookingsService {
       .catch((error) => {
         console.error('Create booking error:', error);
         if (error instanceof BadRequestException) throw error;
-        throw new Error(`Loi he thong khi tao dat phong: ${error.message}`);
+        throw new Error(`Lỗi hệ thống khi tạo đặt phòng: ${error.message}`);
       });
 
     await this.dispatchNotification('notify booking created for user', () =>
@@ -487,7 +487,7 @@ export class BookingsService {
       }
 
       if (booking.status === 'cancelled') {
-        throw new BadRequestException('Don da huy khong the danh gia.');
+        throw new BadRequestException('Đơn đã hủy không thể đánh giá.');
       }
 
       const stayCompleted =
@@ -495,7 +495,7 @@ export class BookingsService {
         (booking.checkOut && new Date(booking.checkOut).getTime() <= Date.now());
 
       if (!stayCompleted) {
-        throw new BadRequestException('Chi co the danh gia sau khi hoan tat ky luu tru.');
+        throw new BadRequestException('Chỉ có thể đánh giá sau khi hoàn tất kỳ lưu trú.');
       }
 
       const reviewId = `RV-${booking.id}`;

@@ -145,6 +145,7 @@ const BookingDetailPage = () => {
   const [reviewVideos, setReviewVideos] = useState<string[]>([]);
   const [reviewMediaUploading, setReviewMediaUploading] = useState(false);
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [isMomoRetrying, setIsMomoRetrying] = useState(false);
   const [localReview, setLocalReview] = useState<LocalBookingReview | null>(null);
 
   useEffect(() => {
@@ -177,6 +178,13 @@ const BookingDetailPage = () => {
 
   const formatPrice = formatCurrency;
   const dateLocale = language === "en" ? "en-US" : "vi-VN";
+  const canRetryMomo =
+    Boolean(booking) &&
+    String(booking?.status || "").toLowerCase() !== "cancelled" &&
+    String(booking?.paymentStatus || "").toLowerCase() === "pending" &&
+    (String(booking?.paymentMethod || "").toLowerCase() === "momo" ||
+      String(booking?.paymentMethod || "").toLowerCase() === "ewallet");
+
   const copy =
     language === "en"
       ? {
@@ -240,6 +248,10 @@ const BookingDetailPage = () => {
           reviewVideoSize: "Video must be under 10MB.",
           reviewUploadError: "Could not upload review media.",
           reviewFallbackMedia: "Media upload was interrupted, but the selected file is kept with your review.",
+          retryMomoBtn: "Pay again with MoMo",
+          retryMomoRetrying: "Redirecting to MoMo...",
+          retryMomoSuccess: "Redirecting to MoMo payment page...",
+          retryMomoError: "Could not create MoMo payment. Please try again.",
         }
       : {
           back: "Quay lại lịch sử booking",
@@ -302,6 +314,10 @@ const BookingDetailPage = () => {
           reviewVideoSize: "Video cần nhỏ hơn 10MB.",
           reviewUploadError: "Không thể tải media đánh giá.",
           reviewFallbackMedia: "Upload media bị gián đoạn, hệ thống vẫn giữ file bạn đã chọn trong đánh giá.",
+          retryMomoBtn: "Thanh toán lại bằng MoMo",
+          retryMomoRetrying: "Đang chuyển đến MoMo...",
+          retryMomoSuccess: "Đang chuyển đến trang thanh toán MoMo...",
+          retryMomoError: "Không thể tạo yêu cầu thanh toán MoMo. Vui lòng thử lại.",
         };
 
   const badgeLabel = (prefix: "booking.status" | "booking.payment", value?: string) =>
@@ -516,6 +532,22 @@ const BookingDetailPage = () => {
     setReviewImages(normalizeReviewMediaItems(localReview.images, [], MAX_REVIEW_IMAGES));
     setReviewVideos(normalizeReviewMediaItems(localReview.videos, [], MAX_REVIEW_VIDEOS));
     setLocalReview(null);
+  };
+
+  const handleRetryMomo = async () => {
+    if (!booking || isMomoRetrying) return;
+    setIsMomoRetrying(true);
+    try {
+      const payment = await apiFetch("/payments/momo/create", {
+        method: "POST",
+        body: JSON.stringify({ bookingId: booking.id, paymentOption: "full" }),
+      });
+      toast.success(copy.retryMomoSuccess);
+      window.location.href = payment.payUrl || payment.shortLink;
+    } catch (err: any) {
+      toast.error(err?.message || copy.retryMomoError);
+      setIsMomoRetrying(false);
+    }
   };
 
   const localReviewImages = localReview
@@ -760,6 +792,51 @@ const BookingDetailPage = () => {
                       <div className="mt-5 rounded-lg border border-border bg-muted/20 p-4">
                         <p className="text-sm font-semibold">{copy.hotelNote}</p>
                         <p className="mt-1 text-sm text-muted-foreground">{booking.adminNote}</p>
+                      </div>
+                    )}
+
+                    {canRetryMomo && (
+                      <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-5">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="flex items-start gap-3">
+                            <div className="mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-amber-100">
+                              <Clock className="h-5 w-5 text-amber-600" />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-amber-800">
+                                {language === "en" ? "Payment pending" : "Đơn hàng chờ thanh toán"}
+                              </p>
+                              <p className="mt-0.5 text-sm text-amber-700">
+                                {language === "en"
+                                  ? "This booking has not been paid yet. Click the button to complete payment via MoMo."
+                                  : "Đơn đặt phòng này chưa được thanh toán. Nhấn nút bên cạnh để hoàn tất thanh toán qua MoMo."}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            id="retry-momo-btn"
+                            type="button"
+                            onClick={handleRetryMomo}
+                            disabled={isMomoRetrying}
+                            className="inline-flex flex-shrink-0 items-center justify-center gap-2.5 rounded-xl bg-[#ae2070] px-5 py-3 text-sm font-bold text-white shadow-md transition hover:bg-[#961a60] active:scale-95 disabled:cursor-not-allowed disabled:opacity-70"
+                          >
+                            {isMomoRetrying ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                {copy.retryMomoRetrying}
+                              </>
+                            ) : (
+                              <>
+                                <img
+                                  src="https://upload.wikimedia.org/wikipedia/vi/f/fe/MoMo_Logo.png"
+                                  alt="MoMo"
+                                  className="h-5 w-5 rounded object-contain"
+                                />
+                                {copy.retryMomoBtn}
+                              </>
+                            )}
+                          </button>
+                        </div>
                       </div>
                     )}
                   </section>
