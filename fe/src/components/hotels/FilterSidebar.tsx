@@ -11,6 +11,7 @@ interface FilterSidebarProps {
   onFilterChange: (filters: HotelFilters) => void;
   priceBounds: [number, number];
   className?: string;
+  onReset?: () => void;
 }
 
 const allAmenities = [
@@ -23,7 +24,7 @@ const allAmenities = [
   { value: "Ăn sáng miễn phí", en: "Free breakfast" },
 ];
 
-const FilterSidebar = ({ filters, onFilterChange, priceBounds, className = "" }: FilterSidebarProps) => {
+const FilterSidebar = ({ filters, onFilterChange, priceBounds, className = "", onReset }: FilterSidebarProps) => {
   const { formatCurrency, language, t } = useLocale();
   const [minPrice, maxPrice] = priceBounds;
   const currentMax = filters.priceRange[1] || maxPrice;
@@ -57,6 +58,7 @@ const FilterSidebar = ({ filters, onFilterChange, priceBounds, className = "" }:
       stars: [],
       amenities: [],
     });
+    if (onReset) onReset();
   };
 
   return (

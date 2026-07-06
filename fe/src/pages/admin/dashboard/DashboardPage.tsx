@@ -58,14 +58,19 @@ const DashboardPage = () => {
 
     const fetchStats = async () => {
       try {
-        const [hotelsData, usersData, bookingStats] = await Promise.all([
-          apiFetch("/hotels").catch(() => []),
-          apiFetch("/users").catch(() => []),
+        const [hotelsRes, usersRes, bookingStats] = await Promise.all([
+          apiFetch("/hotels/admin/list?page=1&limit=1").catch(() => null),
+          apiFetch("/users?page=1&limit=1").catch(() => null),
           apiFetch("/bookings/stats").catch(() => ({ total: 0, revenue: 0, confirmed: 0 })),
         ]);
+        
+        // Extract total count from paginated meta
+        const hotelTotal = hotelsRes?.meta?.total ?? (Array.isArray(hotelsRes) ? hotelsRes.length : 0);
+        const userTotal = usersRes?.meta?.total ?? (Array.isArray(usersRes) ? usersRes.length : 0);
+        
         setStats({ 
-          hotels: hotelsData.length || 0, 
-          users: usersData.length || 0,
+          hotels: hotelTotal, 
+          users: userTotal,
           bookings: bookingStats.total || 0,
           revenue: bookingStats.revenue || 0
         });

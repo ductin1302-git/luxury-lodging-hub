@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import AdminLayout from "@/layouts/AdminLayout";
 import { apiFetch } from "@/services/apiClient";
@@ -8,6 +8,7 @@ import {
   Eye, DollarSign, Mail, FileText, Filter
 } from "lucide-react";
 import { generateInvoiceHTML } from "@/utils/invoiceGenerator";
+import { Pagination } from "@/components/common/Pagination";
 
 export interface Booking {
   id: string;
@@ -80,36 +81,73 @@ const BookingListPage = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
+  const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [paymentFilter, setPaymentFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("");
+  
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState({ total: 0, totalPages: 1, limit: 10 });
 
-  const fetchBookings = async () => {
+  const fetchBookings = useCallback(async (
+    currentPage: number, 
+    search: string, 
+    status: string, 
+    payment: string, 
+    date: string
+  ) => {
     setIsLoading(true);
     try {
-      let url = "/bookings?";
-      if (statusFilter !== "all") url += `status=${statusFilter}&`;
-      if (paymentFilter !== "all") url += `paymentStatus=${paymentFilter}&`;
-      if (dateFilter) url += `dateFrom=${dateFilter}&dateTo=${dateFilter}&`;
-      if (searchQuery) url += `search=${searchQuery}&`;
+      const params = new URLSearchParams({
+        page: String(currentPage),
+        limit: "10"
+      });
+      if (status !== "all") params.append("status", status);
+      if (payment !== "all") params.append("paymentStatus", payment);
+      if (date) {
+        params.append("dateFrom", date);
+        params.append("dateTo", date);
+      }
+      if (search.trim()) params.append("search", search.trim());
 
-      const data = await apiFetch(url);
-      setBookings(data);
+      const res = await apiFetch(`/bookings?${params.toString()}`);
+      // Handle both { data, meta } and legacy plain array responses
+      if (res && typeof res === "object" && Array.isArray(res.data)) {
+        setBookings(res.data);
+        if (res.meta) setMeta(res.meta);
+      } else if (Array.isArray(res)) {
+        setBookings(res);
+        setMeta({ total: res.length, totalPages: 1, limit: 10 });
+      } else {
+        setBookings([]);
+      }
     } catch (error) {
       console.error(error);
-      toast.error("Lỗi khi tải danh sách Đơn đặt phòng");
+      toast.error("Không thể tải danh sách đơn đặt phòng");
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
+  // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetchBookings();
+      setSearchQuery(searchInput);
+      setPage(1);
     }, 500);
     return () => clearTimeout(timer);
-  }, [searchQuery, statusFilter, paymentFilter, dateFilter]);
+  }, [searchInput]);
+
+  // Fetch when dependencies change
+  useEffect(() => {
+    fetchBookings(page, searchQuery, statusFilter, paymentFilter, dateFilter);
+  }, [page, searchQuery, statusFilter, paymentFilter, dateFilter, fetchBookings]);
+
+  // Reset page to 1 when filters change (except search, which handles it in its own debounce)
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, paymentFilter, dateFilter]);
 
   const handleExportInvoice = (booking: Booking) => {
     const html = generateInvoiceHTML(booking);
@@ -137,8 +175,8 @@ const BookingListPage = () => {
               type="text"
               placeholder="Tìm theo Mã, Tên, Email, SĐT..."
               className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 dark:border-border rounded-xl bg-gray-50 dark:bg-muted focus:ring-2 focus:ring-gold outline-none transition-all"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
             />
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -250,6 +288,32 @@ const BookingListPage = () => {
             </tbody>
           </table>
         </div>
+        {!isLoading && (
+          <div className="px-6 py-3 border-t border-gray-200 dark:border-border flex flex-col sm:flex-row items-center justify-between gap-3 bg-gray-50 dark:bg-muted/30">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {meta.total > 0 ? (
+                <>
+                  Hiển thị{" "}
+                  <span className="font-semibold text-gray-700 dark:text-gray-200">
+                    {meta.total === 0 ? 0 : (page - 1) * meta.limit + 1}–{Math.min(page * meta.limit, meta.total)}
+                  </span>
+                  {" "}/ {" "}
+                  <span className="font-semibold text-gray-700 dark:text-gray-200">{meta.total}</span>{" "}
+                  đơn đặt phòng
+                </>
+              ) : (
+                "Không có kết quả"
+              )}
+            </p>
+            {meta.totalPages > 0 && (
+              <Pagination
+                currentPage={page}
+                totalPages={meta.totalPages}
+                onPageChange={setPage}
+              />
+            )}
+          </div>
+        )}
       </div>
     </AdminLayout>
   );

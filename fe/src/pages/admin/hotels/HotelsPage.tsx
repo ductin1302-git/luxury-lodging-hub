@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import AdminLayout from "@/layouts/AdminLayout";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Edit, Trash2, Search, Star, MapPin, BedDouble } from "lucide-react";
+import { Plus, Edit, Trash2, Search, Star, MapPin, BedDouble, Hotel as HotelIcon } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch, getImageUrl } from "@/services/apiClient";
+import { Pagination } from "@/components/common/Pagination";
 
 interface Hotel {
   id: string;
@@ -27,7 +28,6 @@ const getActiveRoomCount = (hotel: Hotel) => {
   if (typeof hotel.availableRoomCount === "number") {
     return hotel.availableRoomCount;
   }
-
   return (hotel.rooms || []).filter((room) => room?.isActive !== false && room?.status !== "inactive").length;
 };
 
@@ -35,39 +35,64 @@ const HotelsPage = () => {
   const navigate = useNavigate();
   const [hotelList, setHotelList] = useState<Hotel[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [deletingHotelId, setDeletingHotelId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState({ total: 0, totalPages: 1, limit: 10 });
 
-  const fetchHotels = async () => {
+  const fetchHotels = useCallback(async (currentPage: number, search: string) => {
     setIsLoading(true);
     try {
-      const data = await apiFetch("/hotels/admin/list");
-      setHotelList(data);
+      const params = new URLSearchParams({
+        page: String(currentPage),
+        limit: "10",
+      });
+      if (search.trim()) {
+        params.append("q", search.trim());
+      }
+
+      const res = await apiFetch(`/hotels/admin/list?${params.toString()}`);
+
+      // Handle both { data, meta } and plain array responses (backward compat)
+      if (res && typeof res === "object" && Array.isArray(res.data)) {
+        setHotelList(res.data);
+        if (res.meta) setMeta(res.meta);
+      } else if (Array.isArray(res)) {
+        setHotelList(res);
+        setMeta({ total: res.length, totalPages: 1, limit: 10 });
+      } else {
+        setHotelList([]);
+      }
     } catch (error) {
       console.error(error);
       toast.error("Không thể tải dữ liệu khách sạn từ Server");
     } finally {
       setIsLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchHotels();
   }, []);
 
-  const filteredHotels = hotelList.filter(
-    (h) =>
-      String(h.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      String(h.city || "").toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Debounce search: wait 500ms after user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(searchInput);
+      setPage(1);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // Fetch when page or committed searchQuery changes
+  useEffect(() => {
+    fetchHotels(page, searchQuery);
+  }, [page, searchQuery, fetchHotels]);
 
   const handleDelete = async (id: string) => {
     if (window.confirm("Bạn có chắc chắn muốn xoá khách sạn này?")) {
       try {
         setDeletingHotelId(id);
         await apiFetch(`/hotels/${id}`, { method: "DELETE" });
-        setHotelList((current) => current.filter((h) => h.id !== id));
         toast.success("Đã ẩn khách sạn khỏi hệ thống. Dữ liệu booking vẫn được giữ lại.");
+        fetchHotels(page, searchQuery);
       } catch (error) {
         console.error(error);
         toast.error(error instanceof Error ? error.message : "Lỗi khi xoá khách sạn");
@@ -81,6 +106,9 @@ const HotelsPage = () => {
     navigate(`/admin/rooms?hotelId=${hotelId}`);
   };
 
+  const start = meta.total === 0 ? 0 : (page - 1) * meta.limit + 1;
+  const end = Math.min(page * meta.limit, meta.total);
+
   return (
     <AdminLayout>
       <div className="mb-8">
@@ -93,10 +121,10 @@ const HotelsPage = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
-              placeholder="Tìm kiếm..."
+              placeholder="Tìm theo tên, thành phố, địa điểm..."
               className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-border rounded-lg bg-gray-50 dark:bg-muted focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
             />
           </div>
           <Link
@@ -126,8 +154,8 @@ const HotelsPage = () => {
                     Đang tải dữ liệu từ Server...
                   </td>
                 </tr>
-              ) : filteredHotels.length > 0 ? (
-                filteredHotels.map((hotel) => (
+              ) : hotelList.length > 0 ? (
+                hotelList.map((hotel) => (
                   <tr key={hotel.id} className="border-b border-gray-100 dark:border-border hover:bg-gray-50 dark:hover:bg-muted/30 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -201,14 +229,58 @@ const HotelsPage = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                    Không tìm thấy dữ liệu phù hợp.
+                  <td colSpan={6} className="px-6 py-16 text-center">
+                    <div className="flex flex-col items-center gap-3 text-gray-400">
+                      <HotelIcon className="w-10 h-10 opacity-30" />
+                      <div>
+                        <p className="font-medium text-gray-600 dark:text-gray-300">
+                          {searchQuery.trim()
+                            ? `Không tìm thấy khách sạn phù hợp với "${searchQuery}"`
+                            : "Chưa có khách sạn nào"}
+                        </p>
+                        {searchQuery.trim() && (
+                          <p className="text-sm mt-1 text-gray-400">
+                            Thử tìm với từ khóa khác hoặc kiểm tra lại tên thành phố
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
+
+        {!isLoading && (
+          <div className="px-6 py-3 border-t border-gray-200 dark:border-border flex flex-col sm:flex-row items-center justify-between gap-3 bg-gray-50 dark:bg-muted/30">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {meta.total > 0 ? (
+                <>
+                  Hiển thị{" "}
+                  <span className="font-semibold text-gray-700 dark:text-gray-200">{start}–{end}</span>
+                  {" "}/ {" "}
+                  <span className="font-semibold text-gray-700 dark:text-gray-200">{meta.total}</span>{" "}
+                  khách sạn
+                </>
+              ) : (
+                "Không có kết quả"
+              )}
+              {searchQuery.trim() && (
+                <span className="ml-1 text-blue-600 dark:text-blue-400">
+                  {" "}cho "<strong>{searchQuery}</strong>"
+                </span>
+              )}
+            </p>
+            {meta.totalPages > 0 && (
+              <Pagination
+                currentPage={page}
+                totalPages={meta.totalPages}
+                onPageChange={setPage}
+              />
+            )}
+          </div>
+        )}
       </div>
     </AdminLayout>
   );

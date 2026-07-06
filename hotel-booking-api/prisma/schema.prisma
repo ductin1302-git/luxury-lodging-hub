@@ -48,22 +48,22 @@ model AppUser {
 }
 
 model Notification {
-  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  recipientUserId String?  @map("recipient_user_id") @db.Uuid
-  scope           String   @db.VarChar(20)
-  kind            String   @db.VarChar(50)
-  title           String   @db.VarChar(255)
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recipientUserId String?   @map("recipient_user_id") @db.Uuid
+  scope           String    @db.VarChar(20)
+  kind            String    @db.VarChar(50)
+  title           String    @db.VarChar(255)
   message         String
-  href            String?  @db.VarChar(255)
-  statusLabel     String?  @map("status_label") @db.VarChar(100)
-  entityType      String?  @map("entity_type") @db.VarChar(50)
-  entityId        String?  @map("entity_id") @db.VarChar(100)
-  eventKey        String   @unique @map("event_key") @db.VarChar(191)
+  href            String?   @db.VarChar(255)
+  statusLabel     String?   @map("status_label") @db.VarChar(100)
+  entityType      String?   @map("entity_type") @db.VarChar(50)
+  entityId        String?   @map("entity_id") @db.VarChar(100)
+  eventKey        String    @unique @map("event_key") @db.VarChar(191)
   metadata        Json?
-  isRead          Boolean  @default(false) @map("is_read")
+  isRead          Boolean   @default(false) @map("is_read")
   readAt          DateTime? @map("read_at") @db.Timestamptz(6)
-  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  recipient       AppUser? @relation(fields: [recipientUserId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  recipient       AppUser?  @relation(fields: [recipientUserId], references: [id], onUpdate: NoAction)
 
   @@index([recipientUserId, createdAt], map: "idx_notifications_recipient")
   @@index([scope, createdAt], map: "idx_notifications_scope")
@@ -71,22 +71,20 @@ model Notification {
 }
 
 model Otp {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email       String?  @db.Citext
-  phone       String?  @db.VarChar(20)
-  otpCode     String   @map("otp_code") @db.VarChar(10)
-  purpose     String   @default("register") @db.VarChar(30)
-  expiresAt   DateTime @map("expires_at") @db.Timestamptz(6)
-  verified    Boolean  @default(false)
-  attempts    Int      @default(0)
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String?  @db.Citext
+  phone     String?  @db.VarChar(20)
+  otpCode   String   @map("otp_code") @db.VarChar(10)
+  purpose   String   @default("register") @db.VarChar(30)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  verified  Boolean  @default(false)
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@index([email, otpCode])
   @@index([phone, otpCode])
   @@map("otps")
 }
-
-
 
 model BookingItem {
   id                BigInt  @id @default(autoincrement())
@@ -302,19 +300,19 @@ model Promotion {
 }
 
 model Review {
-  id         String   @id @db.VarChar(100)
-  hotelId    String   @map("hotel_id") @db.VarChar(50)
-  userId     String?  @map("user_id") @db.Uuid
-  userName   String   @map("user_name") @db.VarChar(150)
-  avatar     String?  @db.VarChar(20)
-  rating     Int      @db.SmallInt
+  id         String        @id @db.VarChar(100)
+  hotelId    String        @map("hotel_id") @db.VarChar(50)
+  userId     String?       @map("user_id") @db.Uuid
+  userName   String        @map("user_name") @db.VarChar(150)
+  avatar     String?       @db.VarChar(20)
+  rating     Int           @db.SmallInt
   comment    String
-  reviewDate DateTime @map("review_date") @db.Date
-  isVisible  Boolean  @default(true) @map("is_visible")
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  hotel      Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  user       AppUser? @relation(fields: [userId], references: [id], onUpdate: NoAction)
+  reviewDate DateTime      @map("review_date") @db.Date
+  isVisible  Boolean       @default(true) @map("is_visible")
+  createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   media      ReviewMedia[]
+  hotel      Hotel         @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user       AppUser?      @relation(fields: [userId], references: [id], onUpdate: NoAction)
 
   @@index([hotelId], map: "idx_reviews_hotel")
   @@map("reviews")
@@ -356,8 +354,6 @@ model RoomImage {
   @@map("room_images")
 }
 
-
-
 model Room {
   id                String           @id @db.VarChar(80)
   hotelId           String           @map("hotel_id") @db.VarChar(50)
@@ -393,6 +389,21 @@ model Room {
   @@index([price], map: "idx_rooms_price")
   @@index([status], map: "idx_rooms_status")
   @@map("rooms")
+}
+
+model Contact {
+  id           String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String              @db.VarChar(150)
+  email        String              @db.Citext
+  subject      String              @db.VarChar(200)
+  message      String
+  status       contact_status_enum @default(new)
+  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  phone        String?             @db.VarChar(20)
+  replyMessage String?             @map("reply_message")
+  repliedAt    DateTime?           @map("replied_at") @db.Timestamptz(6)
+
+  @@map("contacts")
 }
 
 enum amenity_scope_enum {
@@ -466,21 +477,6 @@ enum user_role_enum {
   customer
   staff
   admin
-}
-
-model Contact {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name      String   @db.VarChar(150)
-  email     String   @db.Citext
-  phone     String?  @db.VarChar(20)
-  subject   String   @db.VarChar(200)
-  message   String   @db.Text
-  status    contact_status_enum @default(new)
-  replyMessage String? @map("reply_message") @db.Text
-  repliedAt DateTime? @map("replied_at") @db.Timestamptz(6)
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-
-  @@map("contacts")
 }
 
 enum contact_status_enum {

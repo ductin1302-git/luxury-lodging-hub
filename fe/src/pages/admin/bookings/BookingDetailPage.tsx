@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import AdminLayout from "@/layouts/AdminLayout";
-import { apiFetch } from "@/services/apiClient";
+import { apiFetch, getImageUrl } from "@/services/apiClient";
 import { toast } from "sonner";
 import { 
   ArrowLeft, CreditCard, DollarSign, Mail, FileText, 
@@ -176,8 +176,65 @@ const BookingDetailPage = () => {
               <div className="space-y-4">
                 <p className="text-xs font-bold text-gray-400 uppercase">Khách sạn</p>
                 <div className="bg-muted/30 p-4 rounded-xl border border-border">
-                  <p className="font-bold text-lg">{booking.hotelNameSnapshot}</p>
-                  <p className="text-sm text-gray-500 mt-1">Phòng đã đặt: {booking.items?.[0]?.roomNameSnapshot || booking.items?.[0]?.room?.name || "Standard Room"}</p>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg bg-gray-200 dark:bg-muted overflow-hidden flex-shrink-0 border border-border shadow-sm">
+                      {booking.hotel?.images?.[0]?.url ? (
+                        <img src={getImageUrl(booking.hotel.images[0].url)} alt="Hotel" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400"><Hotel className="w-6 h-6" /></div>
+                      )}
+                    </div>
+                    <p className="font-bold text-lg sm:text-xl text-gray-900 dark:text-white line-clamp-2">{booking.hotel?.name || booking.hotelNameSnapshot}</p>
+                  </div>
+                  
+                  <div className="space-y-4 mt-4">
+                    {booking.items && booking.items.length > 0 ? (
+                      booking.items.map((item, idx) => {
+                        const roomImage = item.room?.image || item.room?.images?.[0]?.url;
+                        return (
+                          <div key={idx} className="flex gap-3 sm:gap-4 items-start bg-white dark:bg-card p-3 sm:p-4 rounded-xl border border-border shadow-sm relative overflow-hidden group">
+                            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gold"></div>
+                            <div className="w-20 h-28 sm:w-24 sm:h-28 rounded-lg overflow-hidden bg-muted flex-shrink-0 relative">
+                              {roomImage ? (
+                                <img src={getImageUrl(roomImage)} alt={item.roomNameSnapshot} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-100 dark:bg-muted/50"><Hotel className="w-6 h-6" /></div>
+                              )}
+                              <div className="absolute bottom-1.5 left-1.5 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                                {item.nights || booking.nights} đêm
+                              </div>
+                            </div>
+                            <div className="flex-1 min-w-0 w-full flex flex-col justify-between h-full">
+                              <div>
+                                <p className="font-bold text-sm sm:text-base text-gray-900 dark:text-white line-clamp-2" title={item.roomNameSnapshot}>
+                                  {item.roomNameSnapshot}
+                                </p>
+                                <p className="text-xs text-gray-500 font-medium mt-1">Giá: {Number(item.roomPriceSnapshot || 0).toLocaleString("vi-VN")} ₫ / đêm</p>
+                                
+                                <div className="flex flex-wrap items-center gap-1.5 mt-2 text-[10px] sm:text-xs text-gray-600 dark:text-gray-400">
+                                  <div className="flex items-center gap-1 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 px-1.5 py-1 rounded font-semibold">
+                                    <Hotel className="w-3 h-3" />
+                                    <span>{item.roomsCount} phòng</span>
+                                  </div>
+                                  <div className="flex items-center gap-1 bg-gray-100 dark:bg-muted px-1.5 py-1 rounded font-medium">
+                                    <User className="w-3 h-3" />
+                                    <span>{item.guestsPerRoom} khách/ph</span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="mt-3 bg-gold/10 px-3 py-1.5 rounded-lg border border-gold/20 flex justify-between items-center w-full">
+                                <span className="text-[10px] uppercase text-gold font-bold tracking-wider">Thành tiền</span>
+                                <span className="font-black text-gold text-sm sm:text-base">{Number(item.lineSubtotal || 0).toLocaleString("vi-VN")} ₫</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <p className="text-sm text-gray-500 italic p-4 bg-muted/30 rounded-xl text-center">Không có chi tiết phòng</p>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="space-y-4">

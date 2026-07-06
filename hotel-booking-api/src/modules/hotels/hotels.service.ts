@@ -294,18 +294,24 @@ export class HotelsService {
     };
 
     if (query.q) {
-      const search = query.q.trim();
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { city: { contains: search, mode: 'insensitive' } },
-        { district: { contains: search, mode: 'insensitive' } },
-        { location: { contains: search, mode: 'insensitive' } },
-        { shortDescription: { contains: search, mode: 'insensitive' } },
+      const tokens = query.q.trim().split(/\s+/).filter(Boolean);
+      const searchConditions = tokens.map(token => ({
+        OR: [
+          { name: { contains: token, mode: 'insensitive' } },
+          { city: { contains: token, mode: 'insensitive' } },
+          { district: { contains: token, mode: 'insensitive' } },
+          { location: { contains: token, mode: 'insensitive' } },
+          { shortDescription: { contains: token, mode: 'insensitive' } },
+        ]
+      }));
+      where.AND = [
+        ...(where.AND || []),
+        ...searchConditions
       ];
     }
 
     if (query.city) {
-      where.city = { equals: query.city, mode: 'insensitive' };
+      where.city = { contains: query.city, mode: 'insensitive' };
     }
 
     if (query.hotelType) {
@@ -316,34 +322,51 @@ export class HotelsService {
       where.stars = query.stars;
     }
 
-    const hotels = await this.prisma.hotel.findMany({
-      where,
-      orderBy: [{ createdAt: 'desc' }],
-      include: {
-        images: {
-          orderBy: [{ isCover: 'desc' }, { sortOrder: 'asc' }],
-        },
-        amenities: {
-          include: {
-            amenity: true,
+    const page = Number(query.page || 1);
+    const limit = Number(query.limit || 10);
+    const skip = (page - 1) * limit;
+
+    const [hotels, total] = await Promise.all([
+      this.prisma.hotel.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: [{ createdAt: 'desc' }],
+        include: {
+          images: {
+            orderBy: [{ isCover: 'desc' }, { sortOrder: 'asc' }],
           },
-        },
-        rooms: {
-          orderBy: [{ createdAt: 'desc' }],
-          include: {
-            images: {
-              orderBy: [{ isCover: 'desc' }, { sortOrder: 'asc' }],
+          amenities: {
+            include: {
+              amenity: true,
+            },
+          },
+          rooms: {
+            orderBy: [{ createdAt: 'desc' }],
+            include: {
+              images: {
+                orderBy: [{ isCover: 'desc' }, { sortOrder: 'asc' }],
+              },
             },
           },
         },
-      },
-    });
+      }),
+      this.prisma.hotel.count({ where }),
+    ]);
 
-    return hotels.map((hotel) => ({
-      ...hotel,
-      amenities: hotel.amenities.map((ha) => ha.amenity),
-      availableRoomCount: hotel.rooms.filter((room) => room.isActive && room.status === 'active').length,
-    }));
+    return {
+      data: hotels.map((hotel) => ({
+        ...hotel,
+        amenities: hotel.amenities.map((ha) => ha.amenity),
+        availableRoomCount: hotel.rooms.filter((room) => room.isActive && room.status === 'active').length,
+      })),
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async findAll(query: QueryHotelsDto) {
@@ -354,18 +377,24 @@ export class HotelsService {
     };
 
     if (query.q) {
-      const search = query.q.trim();
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { city: { contains: search, mode: 'insensitive' } },
-        { district: { contains: search, mode: 'insensitive' } },
-        { location: { contains: search, mode: 'insensitive' } },
-        { shortDescription: { contains: search, mode: 'insensitive' } },
+      const tokens = query.q.trim().split(/\s+/).filter(Boolean);
+      const searchConditions = tokens.map(token => ({
+        OR: [
+          { name: { contains: token, mode: 'insensitive' } },
+          { city: { contains: token, mode: 'insensitive' } },
+          { district: { contains: token, mode: 'insensitive' } },
+          { location: { contains: token, mode: 'insensitive' } },
+          { shortDescription: { contains: token, mode: 'insensitive' } },
+        ]
+      }));
+      where.AND = [
+        ...(where.AND || []),
+        ...searchConditions
       ];
     }
 
     if (query.city) {
-      where.city = { equals: query.city, mode: 'insensitive' };
+      where.city = { contains: query.city, mode: 'insensitive' };
     }
 
     if (query.hotelType) {
@@ -460,10 +489,20 @@ export class HotelsService {
           if (hasDateRange && room.bookingItems) {
             for (let d = new Date(checkIn as Date); d < (checkOut as Date); d.setDate(d.getDate() + 1)) {
               let dailyReserved = 0;
+              const dNorm = new Date(d);
+              dNorm.setHours(0, 0, 0, 0);
+
               for (const item of room.bookingItems) {
                 const bCheckIn = new Date(item.booking.checkIn);
                 const bCheckOut = new Date(item.booking.checkOut);
-                if (d >= bCheckIn && d < bCheckOut) {
+                
+                const bCheckInNorm = new Date(bCheckIn);
+                bCheckInNorm.setHours(0, 0, 0, 0);
+                
+                const bCheckOutNorm = new Date(bCheckOut);
+                bCheckOutNorm.setHours(0, 0, 0, 0);
+
+                if (dNorm >= bCheckInNorm && dNorm < bCheckOutNorm) {
                   dailyReserved += Number(item.roomsCount || 0);
                 }
               }
@@ -651,6 +690,7 @@ export class HotelsService {
         price: Number(dto.price),
         description: dto.description || null,
         size: dto.size ? Number(dto.size) : null,
+        quantityAvailable: dto.quantityAvailable !== undefined ? Number(dto.quantityAvailable) : 10,
 
       },
     });
@@ -683,6 +723,7 @@ export class HotelsService {
         price: dto.price,
         description: dto.description,
         size: dto.size,
+        quantityAvailable: dto.quantityAvailable !== undefined ? dto.quantityAvailable : undefined,
       },
     });
 

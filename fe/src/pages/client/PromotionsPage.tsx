@@ -183,8 +183,8 @@ const PromotionsPage = () => {
     const fetchPromotions = async () => {
       try {
         setIsLoading(true);
-        const data = await apiFetch("/promotions");
-        setPromotions(Array.isArray(data) ? data : []);
+        const res = await apiFetch("/promotions");
+        setPromotions(Array.isArray(res.data) ? res.data : (Array.isArray(res) ? res : []));
       } catch (error) {
         console.error("Failed to fetch promotions", error);
       } finally {

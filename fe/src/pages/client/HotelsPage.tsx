@@ -26,7 +26,7 @@ const sortToApi: Record<string, string> = {
 
 const HotelListing = () => {
   const { language, t } = useLocale();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const cityFilter = searchParams.get("city") || "";
   const checkIn = searchParams.get("checkIn") || "";
   const checkOut = searchParams.get("checkOut") || "";
@@ -41,6 +41,15 @@ const HotelListing = () => {
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const [hotels, setHotels] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const handleResetAll = () => {
+    setSearchParams(new URLSearchParams());
+    setFilters({
+      priceRange: [priceBounds[0] || 0, priceBounds[1] || 0],
+      stars: [],
+      amenities: [],
+    });
+  };
 
   useEffect(() => {
     const loadHotels = async () => {
@@ -166,7 +175,7 @@ const HotelListing = () => {
         <div className="flex gap-8">
           <div className="hidden w-80 flex-shrink-0 self-start lg:block">
             <div className="sticky top-28 animate-fade-in-left" style={{ animationDelay: "0.3s", opacity: 0 }}>
-              <FilterSidebar filters={filters} onFilterChange={setFilters} priceBounds={priceBounds} />
+              <FilterSidebar filters={filters} onFilterChange={setFilters} priceBounds={priceBounds} onReset={handleResetAll} />
             </div>
           </div>
 
@@ -183,7 +192,7 @@ const HotelListing = () => {
                   </button>
                 </div>
 
-                <FilterSidebar filters={filters} onFilterChange={setFilters} priceBounds={priceBounds} />
+                <FilterSidebar filters={filters} onFilterChange={setFilters} priceBounds={priceBounds} onReset={handleResetAll} />
               </div>
             </div>
           )}

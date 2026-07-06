@@ -35,4 +35,10 @@ export class CreateRoomDto {
   @IsInt()
   @Min(1)
   size: number;
+
+  @ApiPropertyOptional({ example: 5, description: 'Tổng số lượng phòng' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  quantityAvailable?: number;
 }

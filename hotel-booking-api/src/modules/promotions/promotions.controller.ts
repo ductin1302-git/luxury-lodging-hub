@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Put, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Put, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -12,8 +12,11 @@ export class PromotionsController {
   constructor(private readonly promotionsService: PromotionsService) {}
 
   @Get()
-  async getAllPromotions() {
-    return this.promotionsService.findAll();
+  async getAllPromotions(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.promotionsService.findAll(Number(page || 1), Number(limit || 10));
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

@@ -175,8 +175,8 @@ export class ReviewsService {
   }
 
   async findAllAdmin(query: AdminReviewQueryDto) {
-    const page = Math.max(1, this.numberFrom(query.page, 1));
-    const limit = Math.min(100, Math.max(5, this.numberFrom(query.limit, 12)));
+    const page = Math.max(1, query.page || 1);
+    const limit = Math.min(100, Math.max(5, query.limit || 12));
     const where = this.buildWhere(query);
 
     const [reviews, total, allStats, visibleCount, hiddenCount, lowRatingCount] =
@@ -221,7 +221,7 @@ export class ReviewsService {
     const mediaMap = await this.getReviewMediaMap(reviews.map((review) => review.id));
 
     return {
-      items: reviews.map((review) => this.toReviewResponse(review, mediaMap.get(review.id))),
+      data: reviews.map((review) => this.toReviewResponse(review, mediaMap.get(review.id))),
       meta: {
         page,
         limit,

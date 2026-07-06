@@ -45,16 +45,32 @@ export class PromotionsService {
     });
   }
 
-  async findAll() {
+  async findAll(page: number = 1, limit: number = 10) {
     await this.cleanupExpiredPromotions();
+    const skip = (page - 1) * limit;
 
-    return this.prisma.promotion.findMany({
-      include: {
-        promotion_hotels: true,
-        promotion_rooms: true,
+    const [promotions, total] = await Promise.all([
+      this.prisma.promotion.findMany({
+        skip,
+        take: limit,
+        include: {
+          promotion_hotels: true,
+          promotion_rooms: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.promotion.count(),
+    ]);
+
+    return {
+      data: promotions,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
-      orderBy: { createdAt: 'desc' }
-    });
+    };
   }
 
   async create(data: any) {

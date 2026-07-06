@@ -21,6 +21,7 @@ import {
   toggleNewsStatus,
 } from "@/services/newsStore";
 import { getImageUrl } from "@/services/apiClient";
+import { Pagination } from "@/components/common/Pagination";
 
 export type NewsArticle = ManagedNewsArticle;
 export const categories = newsCategories;
@@ -30,6 +31,8 @@ const NewsListPage = () => {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
+  const [page, setPage] = useState(1);
+  const limit = 10;
 
   const loadArticles = () => {
     setArticles(getNewsArticles());
@@ -64,6 +67,14 @@ const NewsListPage = () => {
       return matchSearch && matchCategory;
     });
   }, [articles, filterCategory, searchQuery]);
+
+  // Reset page when filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, filterCategory]);
+
+  const totalPages = Math.ceil(filteredArticles.length / limit);
+  const paginatedArticles = filteredArticles.slice((page - 1) * limit, page * limit);
 
   return (
     <AdminLayout>
@@ -162,8 +173,8 @@ const NewsListPage = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredArticles.length > 0 ? (
-                filteredArticles.map((article) => (
+              {paginatedArticles.length > 0 ? (
+                paginatedArticles.map((article) => (
                   <tr
                     key={article.id}
                     className="border-b border-gray-100 dark:border-border hover:bg-gray-50 dark:hover:bg-muted/30 transition-colors"
@@ -248,6 +259,15 @@ const NewsListPage = () => {
             </tbody>
           </table>
         </div>
+        {totalPages > 0 && (
+          <div className="p-4 border-t border-gray-200 dark:border-border">
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+            />
+          </div>
+        )}
       </div>
     </AdminLayout>
   );

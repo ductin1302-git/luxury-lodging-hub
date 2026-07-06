@@ -2,7 +2,9 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsDateString, IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator';
 
-export class QueryHotelsDto {
+import { PaginationDto } from '../../../common/dto/pagination.dto';
+
+export class QueryHotelsDto extends PaginationDto {
   @ApiPropertyOptional({ example: 'beach resort da nang' })
   @IsOptional()
   @IsString()

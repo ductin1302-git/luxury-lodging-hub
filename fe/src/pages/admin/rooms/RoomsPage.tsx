@@ -106,8 +106,17 @@ const RoomsPage = () => {
   const fetchHotels = async () => {
     setIsLoading(true);
     try {
-      const data = await apiFetch("/hotels/admin/list");
-      const hotelData = Array.isArray(data) ? data : [];
+      // Fetch all hotels without limit for room management dropdown
+      const res = await apiFetch("/hotels/admin/list?page=1&limit=100");
+      
+      // Handle both { data, meta } and plain array responses
+      let hotelData: Hotel[] = [];
+      if (res && typeof res === "object" && Array.isArray(res.data)) {
+        hotelData = res.data;
+      } else if (Array.isArray(res)) {
+        hotelData = res;
+      }
+      
       setHotels(hotelData);
 
       if (!selectedHotelId && hotelData.length > 0) {

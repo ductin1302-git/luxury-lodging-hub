@@ -21,6 +21,7 @@ import { toast } from "sonner";
 
 import AdminLayout from "@/layouts/AdminLayout";
 import { apiFetch, getImageUrl } from "@/services/apiClient";
+import { Pagination } from "@/components/common/Pagination";
 
 interface AdminReview {
   id: string;
@@ -142,7 +143,7 @@ const AdminReviewsPage = () => {
       if (dateTo) params.set("dateTo", dateTo);
 
       const data = await apiFetch(`/reviews/admin?${params.toString()}`);
-      setReviews(Array.isArray(data.items) ? data.items : []);
+      setReviews(Array.isArray(data.data) ? data.data : []);
       setStats(data.stats || initialStats);
       setMeta(data.meta || initialMeta);
     } catch (error) {
@@ -416,29 +417,16 @@ const AdminReviewsPage = () => {
           </div>
         )}
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-4 dark:border-border">
-          <p className="text-xs text-slate-400">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-t border-slate-100 px-5 py-4 dark:border-border">
+          <p className="text-xs text-slate-400 text-center md:text-left mt-2 md:mt-0 order-2 md:order-1">
             Hiển thị {reviews.length} / {meta.total} đánh giá
           </p>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              disabled={page <= 1 || isLoading}
-              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold text-slate-600 transition hover:border-gold/50 hover:text-gold disabled:cursor-not-allowed disabled:opacity-50 dark:border-border"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Trước
-            </button>
-            <button
-              type="button"
-              disabled={page >= meta.totalPages || isLoading}
-              onClick={() => setPage((prev) => Math.min(meta.totalPages, prev + 1))}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold text-slate-600 transition hover:border-gold/50 hover:text-gold disabled:cursor-not-allowed disabled:opacity-50 dark:border-border"
-            >
-              Sau
-              <ChevronRight className="h-4 w-4" />
-            </button>
+          <div className="order-1 md:order-2 flex-1 flex justify-center md:justify-end">
+            <Pagination
+              currentPage={page}
+              totalPages={meta.totalPages}
+              onPageChange={setPage}
+            />
           </div>
         </div>
       </div>

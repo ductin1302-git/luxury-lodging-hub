@@ -1,6 +1,8 @@
 import { IsOptional, IsString } from 'class-validator';
 
-export class AdminReviewQueryDto {
+import { PaginationDto } from '../../../common/dto/pagination.dto';
+
+export class AdminReviewQueryDto extends PaginationDto {
   @IsOptional()
   @IsString()
   q?: string;
@@ -24,12 +26,4 @@ export class AdminReviewQueryDto {
   @IsOptional()
   @IsString()
   dateTo?: string;
-
-  @IsOptional()
-  @IsString()
-  page?: string;
-
-  @IsOptional()
-  @IsString()
-  limit?: string;
 }

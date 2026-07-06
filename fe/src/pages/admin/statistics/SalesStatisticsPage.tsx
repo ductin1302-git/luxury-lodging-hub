@@ -79,7 +79,9 @@ const SalesStatisticsPage = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const data = await apiFetch("/bookings");
+        const res = await apiFetch("/bookings?page=1&limit=1000");
+        // Handle both { data, meta } and legacy plain array responses
+        const data = res && typeof res === "object" && Array.isArray(res.data) ? res.data : (Array.isArray(res) ? res : []);
         setBookings(data);
         processData(data);
       } catch (error) {

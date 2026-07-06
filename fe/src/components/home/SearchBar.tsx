@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Calendar, MapPin, Search, Users } from "lucide-react";
 
 import { VIETNAM_PROVINCES } from "@/constants/vietnamProvinces";
@@ -12,12 +12,21 @@ interface SearchBarProps {
 const SearchBar = ({ className = "" }: SearchBarProps) => {
   const navigate = useNavigate();
   const { t } = useLocale();
-  const [destination, setDestination] = useState("");
-  const [checkIn, setCheckIn] = useState("");
-  const [checkOut, setCheckOut] = useState("");
-  const [guests, setGuests] = useState(2);
-  const [rooms, setRooms] = useState(1);
+  const [searchParams] = useSearchParams();
+  const [destination, setDestination] = useState(searchParams.get("city") || "");
+  const [checkIn, setCheckIn] = useState(searchParams.get("checkIn") || "");
+  const [checkOut, setCheckOut] = useState(searchParams.get("checkOut") || "");
+  const [guests, setGuests] = useState(Number(searchParams.get("guests")) || 2);
+  const [rooms, setRooms] = useState(Number(searchParams.get("rooms")) || 1);
   const today = new Date().toISOString().split("T")[0];
+
+  useEffect(() => {
+    setDestination(searchParams.get("city") || "");
+    setCheckIn(searchParams.get("checkIn") || "");
+    setCheckOut(searchParams.get("checkOut") || "");
+    setGuests(Number(searchParams.get("guests")) || 2);
+    setRooms(Number(searchParams.get("rooms")) || 1);
+  }, [searchParams]);
   const minCheckOut = checkIn
     ? new Date(new Date(checkIn).getTime() + 86400000).toISOString().split("T")[0]
     : today;

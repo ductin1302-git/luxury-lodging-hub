@@ -108,6 +108,8 @@ const lifecycleMeta: Record<PromoLifecycle, { label: string; hint: string; badge
   },
 };
 
+import { Pagination } from "@/components/common/Pagination";
+
 export default function AdminPromotionsListPage() {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -118,6 +120,9 @@ export default function AdminPromotionsListPage() {
   const [formData, setFormData] = useState({ ...emptyForm });
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState({ total: 0, totalPages: 1, limit: 10 });
 
   const formatCurrency = (val: number) =>
     new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(val || 0));
@@ -125,8 +130,11 @@ export default function AdminPromotionsListPage() {
   const fetchPromotions = async () => {
     try {
       setIsLoading(true);
-      const data = await apiFetch("/promotions");
-      setPromotions(Array.isArray(data) ? data : []);
+      const res = await apiFetch(`/promotions?page=${page}&limit=10`);
+      setPromotions(Array.isArray(res.data) ? res.data : []);
+      if (res.meta) {
+        setMeta(res.meta);
+      }
     } catch (error: any) {
       console.error(error);
       toast.error(error?.message || "Không thể tải danh sách voucher");
@@ -137,7 +145,7 @@ export default function AdminPromotionsListPage() {
 
   useEffect(() => {
     fetchPromotions();
-  }, []);
+  }, [page]);
 
   const filteredPromotions = useMemo(() => {
     const keyword = searchTerm.trim().toLowerCase();
@@ -482,6 +490,15 @@ export default function AdminPromotionsListPage() {
               </tbody>
             </table>
           </div>
+          {!isLoading && meta.totalPages > 0 && (
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800">
+              <Pagination
+                currentPage={page}
+                totalPages={meta.totalPages}
+                onPageChange={setPage}
+              />
+            </div>
+          )}
         </div>
 
         {isModalOpen && (

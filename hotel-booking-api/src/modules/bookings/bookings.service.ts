@@ -245,10 +245,20 @@ export class BookingsService {
         let reservedUnits = 0;
         for (let d = new Date(checkIn); d < checkOut; d.setDate(d.getDate() + 1)) {
           let dailyReserved = 0;
+          const dNorm = new Date(d);
+          dNorm.setHours(0, 0, 0, 0);
+          
           for (const item of overlappingBookings) {
             const bCheckIn = new Date(item.booking.checkIn);
             const bCheckOut = new Date(item.booking.checkOut);
-            if (d >= bCheckIn && d < bCheckOut) {
+            
+            const bCheckInNorm = new Date(bCheckIn);
+            bCheckInNorm.setHours(0, 0, 0, 0);
+            
+            const bCheckOutNorm = new Date(bCheckOut);
+            bCheckOutNorm.setHours(0, 0, 0, 0);
+
+            if (dNorm >= bCheckInNorm && dNorm < bCheckOutNorm) {
               dailyReserved += Number(item.roomsCount || 0);
             }
           }
@@ -357,7 +367,7 @@ export class BookingsService {
             payment: true,
             items: {
               include: {
-                room: { select: { id: true, name: true } },
+                room: { select: { id: true, name: true, image: true, images: true } },
               },
             },
           },
@@ -386,6 +396,8 @@ export class BookingsService {
     dateFrom?: string;
     dateTo?: string;
     search?: string;
+    page?: number;
+    limit?: number;
   }) {
     const where: any = {};
 
@@ -418,21 +430,40 @@ export class BookingsService {
       ];
     }
 
-    return this.prisma.booking.findMany({
-      where,
-      include: {
-        user: { select: { id: true, fullName: true, email: true, phone: true } },
-        hotel: { select: { id: true, name: true } },
-        promotion: true,
-        payment: true,
-        items: {
-          include: {
-            room: { select: { id: true, name: true } },
+    const page = Number(filters?.page || 1);
+    const limit = Number(filters?.limit || 10);
+    const skip = (page - 1) * limit;
+
+    const [bookings, total] = await Promise.all([
+      this.prisma.booking.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          user: { select: { id: true, fullName: true, email: true, phone: true } },
+          hotel: { select: { id: true, name: true, images: true } },
+          promotion: true,
+          payment: true,
+          items: {
+            include: {
+              room: { select: { id: true, name: true, image: true, images: true } },
+            },
           },
         },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.booking.count({ where }),
+    ]);
+
+    return {
+      data: bookings,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
-      orderBy: { createdAt: 'desc' },
-    });
+    };
   }
 
   async findByUser(userId: string) {
@@ -461,7 +492,7 @@ export class BookingsService {
         payment: true,
         items: {
           include: {
-            room: { select: { id: true, name: true } },
+            room: { select: { id: true, name: true, image: true, images: true } },
           },
         },
       },
@@ -492,7 +523,7 @@ export class BookingsService {
       const booking = await tx.booking.findFirst({
         where: { id: bookingId, userId },
         include: {
-          hotel: { select: { id: true, name: true } },
+          hotel: { select: { id: true, name: true, images: true } },
         },
       });
 
@@ -596,12 +627,12 @@ export class BookingsService {
       where: { id },
       include: {
         user: { select: { id: true, fullName: true, email: true, phone: true } },
-        hotel: { select: { id: true, name: true } },
+        hotel: { select: { id: true, name: true, images: true } },
         promotion: true,
         payment: true,
         items: {
           include: {
-            room: { select: { id: true, name: true } },
+            room: { select: { id: true, name: true, image: true, images: true } },
           },
         },
       },
@@ -674,12 +705,12 @@ export class BookingsService {
         },
         include: {
           user: { select: { id: true, fullName: true, email: true, phone: true } },
-          hotel: { select: { id: true, name: true } },
+          hotel: { select: { id: true, name: true, images: true } },
           promotion: true,
           payment: true,
           items: {
             include: {
-              room: { select: { id: true, name: true } },
+              room: { select: { id: true, name: true, image: true, images: true } },
             },
           },
         },
@@ -703,7 +734,7 @@ export class BookingsService {
         include: {
           items: true,
           user: { select: { id: true, fullName: true, email: true, phone: true } },
-          hotel: { select: { id: true, name: true } },
+          hotel: { select: { id: true, name: true, images: true } },
           payment: true,
         },
       });
@@ -725,11 +756,11 @@ export class BookingsService {
         },
         include: {
           user: { select: { id: true, fullName: true, email: true, phone: true } },
-          hotel: { select: { id: true, name: true } },
+          hotel: { select: { id: true, name: true, images: true } },
           payment: true,
           items: {
             include: {
-              room: { select: { id: true, name: true } },
+              room: { select: { id: true, name: true, image: true, images: true } },
             },
           },
         },

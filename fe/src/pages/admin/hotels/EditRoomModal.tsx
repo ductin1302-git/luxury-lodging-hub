@@ -18,6 +18,7 @@ const EditRoomModal: React.FC<EditRoomModalProps> = ({ hotelId, room, onClose, o
     price: room.price || 0,
     description: room.description || "",
     size: room.size || 30,
+    quantityAvailable: room.quantityAvailable || 1,
   });
   
   const [images, setImages] = useState<string[]>(
@@ -119,6 +120,7 @@ const EditRoomModal: React.FC<EditRoomModalProps> = ({ hotelId, room, onClose, o
           maxGuests: Number(formData.maxGuests),
           price: Number(formData.price),
           size: Number(formData.size),
+          quantityAvailable: Number(formData.quantityAvailable),
           images: images.filter(img => img !== ""),
           image: images.filter(img => img !== "")[0] || null,
         }),
@@ -195,6 +197,18 @@ const EditRoomModal: React.FC<EditRoomModalProps> = ({ hotelId, room, onClose, o
                   type="number" 
                   name="maxGuests" 
                   value={formData.maxGuests} 
+                  onChange={handleChange} 
+                  className="w-full px-4 py-2 bg-gray-50 dark:bg-muted border border-gray-200 dark:border-border rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20" 
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1.5 text-gray-700 dark:text-gray-300">Tổng số lượng phòng *</label>
+                <input 
+                  required 
+                  type="number" 
+                  name="quantityAvailable" 
+                  value={formData.quantityAvailable} 
                   onChange={handleChange} 
                   className="w-full px-4 py-2 bg-gray-50 dark:bg-muted border border-gray-200 dark:border-border rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20" 
                 />

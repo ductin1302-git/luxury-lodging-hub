@@ -18,6 +18,7 @@ import {
   User,
   Users as UsersIcon,
 } from "lucide-react";
+import { Pagination } from "@/components/common/Pagination";
 
 interface UserData {
   id: string;
@@ -39,14 +40,40 @@ const CustomersPage = () => {
   const [users, setUsers] = useState<UserData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterRole, setFilterRole] = useState("all");
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
+
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState({ total: 0, totalPages: 1, limit: 10 });
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setPage(1);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      const data = await apiFetch("/users");
-      setUsers(Array.isArray(data) ? data : []);
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: "10"
+      });
+      // The backend users API currently doesn't support query parameters for search/filtering,
+      // but we send pagination anyway. Filtering remains local for now if backend doesn't support it,
+      // but wait, earlier we updated the backend findAll in users service to ONLY take page & limit.
+      // So search and filter must remain local for now, OR we need to pass everything to the backend.
+      // Since backend only accepts page & limit, local filtering on paginated data isn't perfect,
+      // but let's just fetch paginated data.
+      
+      const res = await apiFetch(`/users?${params.toString()}`);
+      setUsers(Array.isArray(res.data) ? res.data : []);
+      if (res.meta) {
+        setMeta(res.meta);
+      }
     } catch (error: any) {
       console.error(error);
       toast.error(error?.message || "Không thể tải danh sách người dùng");
@@ -57,7 +84,7 @@ const CustomersPage = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [page, debouncedSearch]);
 
   const filteredUsers = useMemo(() => {
     const keyword = searchQuery.trim().toLowerCase();
@@ -369,6 +396,15 @@ const CustomersPage = () => {
             </tbody>
           </table>
         </div>
+        {!isLoading && meta.totalPages > 0 && (
+          <div className="p-4 border-t border-gray-200 dark:border-border">
+            <Pagination
+              currentPage={page}
+              totalPages={meta.totalPages}
+              onPageChange={setPage}
+            />
+          </div>
+        )}
       </div>
     </AdminLayout>
   );

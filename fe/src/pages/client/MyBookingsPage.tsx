@@ -4,7 +4,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import ScrollReveal from "@/components/common/ScrollReveal";
 import { AlertCircle, BedDouble, CalendarDays, CheckCircle, ClipboardList, Clock, Home, Mail, Phone, Printer, Receipt, Sparkles, User, Users, Wallet } from "lucide-react";
-import { apiFetch } from "@/services/apiClient";
+import { apiFetch, getImageUrl } from "@/services/apiClient";
 import { useAuth } from "@/contexts/AuthContext";
 import { interpolate, useLocale } from "@/contexts/LocaleContext";
 import { toast } from "sonner";
@@ -236,12 +236,71 @@ const BookingSuccess = () => {
                       </div>
                     </div>
 
-                    <div className="rounded-xl border border-border p-4 bg-muted/20">
-                      <div className="flex items-center gap-2 font-bold mb-3"><BedDouble className="w-4 h-4 text-gold" /> {copy.stay}</div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between gap-4"><span className="text-muted-foreground">{copy.hotel}</span><span className="font-semibold text-right">{booking.hotel?.name || booking.hotelNameSnapshot}</span></div>
-                        <div className="flex justify-between gap-4"><span className="text-muted-foreground">{copy.roomType}</span><span className="text-right">{roomName}</span></div>
-                        <div className="flex justify-between gap-4"><span className="text-muted-foreground inline-flex items-center gap-1"><Users className="w-3 h-3" /> {t("booking.guestRoom")}</span><span>{interpolate(t("hotels.guestCount"), { count: booking.guests || 0 })} - {interpolate(t("hotels.roomCount"), { count: booking.roomsCount || 0 })}</span></div>
+                    <div className="rounded-xl border border-border overflow-hidden bg-muted/5">
+                      <div className="bg-muted/20 px-4 py-3 border-b border-border flex items-center gap-2 font-bold"><BedDouble className="w-4 h-4 text-gold" /> {copy.stay}</div>
+                      <div className="p-4 space-y-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-lg bg-gray-200 dark:bg-muted overflow-hidden flex-shrink-0 border border-border shadow-sm">
+                            {booking.hotel?.images?.[0]?.url ? (
+                              <img src={getImageUrl(booking.hotel.images[0].url)} alt="Hotel" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-gray-400"><Home className="w-5 h-5" /></div>
+                            )}
+                          </div>
+                          <div>
+                            <span className="text-xs text-muted-foreground block mb-0.5">{copy.hotel}</span>
+                            <span className="font-bold text-base sm:text-lg text-gray-900 dark:text-white line-clamp-1">{booking.hotel?.name || booking.hotelNameSnapshot}</span>
+                          </div>
+                        </div>
+                        <div className="pt-2 space-y-4">
+                          {booking.items && booking.items.length > 0 ? (
+                            booking.items.map((item: any, idx: number) => {
+                              const roomImg = item.room?.image || item.room?.images?.[0]?.url;
+                              return (
+                                <div key={idx} className="flex gap-3 sm:gap-4 items-start bg-white dark:bg-card p-3 sm:p-4 rounded-xl border border-border shadow-sm relative overflow-hidden group">
+                                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gold"></div>
+                                  <div className="w-20 h-28 sm:w-24 sm:h-28 rounded-lg overflow-hidden bg-muted flex-shrink-0 relative">
+                                    {roomImg ? (
+                                      <img src={getImageUrl(roomImg)} alt={item.roomNameSnapshot} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-100 dark:bg-muted/50"><Home className="w-6 h-6" /></div>
+                                    )}
+                                    <div className="absolute bottom-1.5 left-1.5 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                                      {item.nights || booking.nights} đêm
+                                    </div>
+                                  </div>
+                                  <div className="flex-1 min-w-0 w-full flex flex-col justify-between h-full">
+                                    <div>
+                                      <p className="font-bold text-sm sm:text-base text-gray-900 dark:text-white line-clamp-2" title={item.roomNameSnapshot}>
+                                        {item.roomNameSnapshot}
+                                      </p>
+                                      <p className="text-xs text-gray-500 font-medium mt-1">Giá: {Number(item.roomPriceSnapshot || 0).toLocaleString("vi-VN")} ₫ / đêm</p>
+                                      
+                                      <div className="flex flex-wrap items-center gap-1.5 mt-2 text-[10px] sm:text-xs text-gray-600 dark:text-gray-400">
+                                        <div className="flex items-center gap-1 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 px-1.5 py-1 rounded font-semibold">
+                                          <BedDouble className="w-3 h-3" />
+                                          <span>{item.roomsCount} phòng</span>
+                                        </div>
+                                        <div className="flex items-center gap-1 bg-gray-100 dark:bg-muted px-1.5 py-1 rounded font-medium">
+                                          <User className="w-3 h-3" />
+                                          <span>{item.guestsPerRoom} khách/ph</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="mt-3 bg-gold/10 px-3 py-1.5 rounded-lg border border-gold/20 flex justify-between items-center w-full">
+                                      <span className="text-[10px] uppercase text-gold font-bold tracking-wider">Thành tiền</span>
+                                      <span className="font-black text-gold text-sm sm:text-base">{Number(item.lineSubtotal || 0).toLocaleString("vi-VN")} ₫</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <div className="flex justify-between gap-4 p-4 bg-muted/30 rounded-xl"><span className="text-muted-foreground">{copy.roomType}</span><span className="text-right font-medium">{roomName}</span></div>
+                          )}
+                        </div>
+                        <div className="flex justify-between gap-4 pt-4 border-t border-border"><span className="text-muted-foreground inline-flex items-center gap-1 font-medium"><Users className="w-4 h-4 text-gold" /> {t("booking.guestRoom")}</span><span className="font-bold text-base">{interpolate(t("hotels.guestCount"), { count: booking.guests || 0 })} - {interpolate(t("hotels.roomCount"), { count: booking.roomsCount || 0 })}</span></div>
                       </div>
                     </div>
                   </div>

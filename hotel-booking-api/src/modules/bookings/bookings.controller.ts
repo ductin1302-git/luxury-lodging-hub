@@ -34,8 +34,10 @@ export class BookingsController {
     @Query('dateFrom') dateFrom?: string,
     @Query('dateTo') dateTo?: string,
     @Query('search') search?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
   ) {
-    return this.bookingsService.findAll({ status, paymentStatus, paymentMethod, dateFrom, dateTo, search });
+    return this.bookingsService.findAll({ status, paymentStatus, paymentMethod, dateFrom, dateTo, search, page, limit });
   }
 
   @Get('stats')
