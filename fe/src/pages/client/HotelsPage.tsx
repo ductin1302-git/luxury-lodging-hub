@@ -196,7 +196,13 @@ const HotelListing = () => {
               </div>
             ) : filteredHotels.length === 0 ? (
               <div className="animate-fade-in-up py-20 text-center">
-                <p className="mb-2 text-xl text-slate-500">{t("hotels.emptyTitle")}</p>
+                <p className="mb-2 text-xl text-slate-500">
+                  {cityFilter
+                    ? language === "vi"
+                      ? `Hiện tại địa điểm ${cityFilter} chưa có khách sạn Luxury nào.`
+                      : `Currently, there are no Luxury hotels in ${cityFilter}.`
+                    : t("hotels.emptyTitle")}
+                </p>
                 <p className="text-sm text-slate-400">{t("hotels.emptyHint")}</p>
               </div>
             ) : (
