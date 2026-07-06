@@ -14,7 +14,7 @@ export class MailService {
     this.transporter = nodemailer.createTransport({
       host: this.configService.get<string>('MAIL_HOST'),
       port: Number(this.configService.get<string>('MAIL_PORT') || 587),
-      secure: false,
+      secure: Number(this.configService.get<string>('MAIL_PORT')) === 465,
       connectionTimeout: timeoutMs,
       greetingTimeout: timeoutMs,
       socketTimeout: timeoutMs,
