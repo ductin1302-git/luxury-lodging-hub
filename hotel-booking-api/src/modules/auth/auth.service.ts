@@ -407,8 +407,13 @@ export class AuthService {
         },
       });
 
-      await this.mailService.sendPasswordResetOtpEmail(email, otp);
-      console.log(`RESET PASSWORD OTP:`, { email, otp, expiresAt });
+      try {
+        await this.mailService.sendPasswordResetOtpEmail(email, otp);
+        console.log(`RESET PASSWORD OTP:`, { email, otp, expiresAt });
+      } catch (mailError) {
+        console.error('MAIL SENDING FAILED:', mailError);
+        throw new BadRequestException('Không gửi được email xác thực. Vui lòng kiểm tra cấu hình mail trên server.');
+      }
     }
 
     return {
