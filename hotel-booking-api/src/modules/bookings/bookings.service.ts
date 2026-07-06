@@ -247,7 +247,7 @@ export class BookingsService {
         if (availableUnits < dto.roomsCount) {
           throw new BadRequestException(
             availableUnits <= 0
-              ? 'Phòng này hiện đã hết. Vui lòng chọn loại phòng khác.'
+              ? 'Phòng này vào ngày đó đã có khách đặt. Vui lòng chọn phòng khác.'
               : `Chỉ còn ${availableUnits} phòng trống cho khoảng ngày bạn chọn.`,
           );
         }
